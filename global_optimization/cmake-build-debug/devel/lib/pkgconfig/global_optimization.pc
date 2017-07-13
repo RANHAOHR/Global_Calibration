@@ -1,0 +1,8 @@
+prefix=/home/ranhao/ros_ws/src/Global_Calibration/global_optimization/cmake-build-debug/devel
+
+Name: global_optimization
+Description: Description of global_optimization
+Version: 0.0.0
+Cflags: -I/home/ranhao/ros_ws/src/Global_Calibration/global_optimization/include
+Libs: -L/home/ranhao/ros_ws/src/Global_Calibration/global_optimization/cmake-build-debug/devel/lib -loptimization_calibration
+Requires: cv_bridge image_transport roscpp sensor_msgs std_msgs message_runtime cwru_opencv_common tool_model_optimization geometry_msgs cwru_davinci_interface cwru_davinci_kinematics xform_utils
