@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(global_optimization)
 
+
 find_package(catkin_simple REQUIRED)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -20,7 +21,10 @@ catkin_package(CATKIN_DEPENDS message_runtime std_msgs sensor_msgs geometry_msgs
 
 # C++0x support - not quite the same as final C++11!
 # use carefully;  can interfere with point-cloud library
-#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pg -Q" )
+# SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -pg -Q" )
+# SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg -Q")
+
+
 # SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg -Q")
 
 # Libraries: uncomment the following and edit arguments to create a new library
@@ -31,11 +35,13 @@ cs_add_library(optimization_calibration
 )
 
 cs_add_executable(optimization_calibration_main src/optimization_calibration_main.cpp)
+cs_add_executable(generate_dataset src/generate_dataset.cpp)
 #the following is required, if desire to link a node in this package with a library created in this same package
 # edit the arguments to reference the named node and named library within this package
 # target_link_library(example my_lib)
 target_link_libraries(optimization_calibration tool_model_lib)
 target_link_libraries(optimization_calibration_main optimization_calibration)
+target_link_libraries(generate_dataset optimization_calibration)
 
 cs_install()
 cs_export()

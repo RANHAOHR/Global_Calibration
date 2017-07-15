@@ -1,0 +1,8 @@
+prefix=/usr/local
+
+Name: global_optimization
+Description: Description of global_optimization
+Version: 0.0.0
+Cflags: -I/usr/local/include
+Libs: -L/usr/local/lib -loptimization_calibration
+Requires: cv_bridge image_transport roscpp sensor_msgs std_msgs message_runtime cwru_opencv_common tool_model_optimization geometry_msgs cwru_davinci_interface cwru_davinci_kinematics xform_utils

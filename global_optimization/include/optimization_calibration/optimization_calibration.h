@@ -69,6 +69,9 @@
 //#include <cwru_xform_utils/xform_utils.h>
 #include <xform_utils/xform_utils.h>
 
+#include <iostream>
+#include <fstream>
+
 class OptCalibration {
 
 private:
@@ -81,6 +84,12 @@ private:
 	 */
     std::vector<ToolModel::toolModel> tool_poses;
 
+    /**
+     * @brief for comparing and testing
+     */
+    std::vector<cv::Mat> left_raw_images; //left rendered Image
+    std::vector<cv::Mat> right_raw_images; //right rendered Image
+
 	std::vector<cv::Mat> segmented_left;
 	std::vector<cv::Mat> segmented_right;
 
@@ -92,15 +101,15 @@ private:
 
 	std::vector<double> matchingScores; // particle scores (matching scores)
 
-	std::vector<std::vector <double> > g_CB;
+	std::vector<cv::Mat > g_CB;
+
+    std::vector<std::vector<double> > joint_sensor;
+
 
     cv::Mat Cam_left_arm_1;
     cv::Mat Cam_right_arm_1;
 
     Davinci_fwd_solver kinematics;
-
-    std::vector<double> sensor_1;
-    std::vector<double> sensor_2;
 
 	void projectionRightCB(const sensor_msgs::CameraInfo::ConstPtr &projectionRight);
 	void projectionLeftCB(const sensor_msgs::CameraInfo::ConstPtr &projectionLeft);
@@ -117,13 +126,12 @@ private:
 	 */
 	int L;
 
-public:
+    /**
+     * Number of pictures from data set
+     */
+     int nData;
 
-/**
- * @brief for comparing and testing
- */
-	cv::Mat raw_image_left; //left rendered Image
-	cv::Mat raw_image_right; //right rendered Image
+public:
 
 /**
  * Projection matrices
@@ -175,6 +183,12 @@ public:
 	void boundaryCheck(cv::Mat &particle);
 
 	void computeSE3(const cv::Mat &vec_6_1, cv::Mat &outputGeometry);
+
+    cv::Mat segmentation(cv::Mat &rawImage);
+
+    void convertJointToPose();
+
+    void computeRodriguesVec(const Eigen::Affine3d &trans, cv::Mat &rot_vec);
 };
 
 #endif

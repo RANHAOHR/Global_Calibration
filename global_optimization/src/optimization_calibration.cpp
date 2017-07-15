@@ -37,10 +37,11 @@
  */
 
 #include <optimization_calibration/optimization_calibration.h>  //everything inside here
+
 using namespace std;
 
 OptCalibration::OptCalibration(ros::NodeHandle *nodehandle):
-        node_handle(*nodehandle), L(13)
+        node_handle(*nodehandle), L(13), nData(1)
 {
     /********** using calibration results: camera-base transformation *******/
     g_cr_cl = cv::Mat::eye(4, 4, CV_64FC1);
@@ -69,9 +70,6 @@ OptCalibration::OptCalibration(ros::NodeHandle *nodehandle):
 	toolImage_left_temp = cv::Mat::zeros(480, 640, CV_8UC3);
 	toolImage_right_temp = cv::Mat::zeros(480, 640, CV_8UC3);
 
-	raw_image_left = cv::Mat::zeros(480, 640, CV_8UC3);
-	raw_image_right = cv::Mat::zeros(480, 640, CV_8UC3);
-
 	P_left = cv::Mat::zeros(3,4,CV_64FC1);
 	P_right = cv::Mat::zeros(3,4,CV_64FC1);
 
@@ -79,6 +77,7 @@ OptCalibration::OptCalibration(ros::NodeHandle *nodehandle):
 
     kinematics = Davinci_fwd_solver();
     getToolPoses();
+
 };
 
 OptCalibration::~OptCalibration() {
@@ -129,11 +128,101 @@ void OptCalibration::projectionLeftCB(const sensor_msgs::CameraInfo::ConstPtr &p
 
 void OptCalibration::optimizationMain(){
 
+
 };
 
 void OptCalibration::getToolPoses(){
 
+    std::string data_pkg = ros::package::getPath("global_optimization");
+
+    left_raw_images.resize(nData);
+    right_raw_images.resize(nData);
+
+    char index[16];
+    /**
+     * read images from left and right image pool
+     */
+    for (int i = 0; i < nData; ++i) {
+        sprintf(index, "%d", i);
+        string ipic(index);
+
+        string left_fname = data_pkg + "/left_pics/" + ipic + ".png";
+        left_raw_images[i] = cv::imread(left_fname);
+
+        string right_fname = data_pkg + "/right_pics/" + ipic + ".png";
+        right_raw_images[i] = cv::imread(right_fname);
+
+    }
+    /**
+     * get segmented images
+     */
+    for (int j = 0; j < nData; ++j) {
+        segmented_left[j] = segmentation(left_raw_images[j]);
+        segmented_right[j] = segmentation(right_raw_images[j]);
+    }
+    /**
+     * get the corresponding joint sensor poses for all images
+     */
+    joint_sensor.resize(nData);
+    for (int k = 0; k < nData; ++k) {
+        joint_sensor[k].resize(7);
+    }
+
+    string jsp_path = data_pkg + "/touchy.jsp";
+    fstream jspfile(jsp_path.c_str(), std::ios_base::in);
+    std::vector<double > temp_sensor;
+    double filedata;
+
+    while(jspfile >> filedata){
+        temp_sensor.push_back(filedata);
+    }
+
+    for (int i = 0; i < nData; ++i) {
+        for (int j = 0; j < 7; ++j) {
+            int Idx = i* 7 + j;
+            joint_sensor[i][j] = temp_sensor[Idx];
+        }
+    }
+
+    convertJointToPose();
 };
+
+void OptCalibration::convertJointToPose(){
+
+    int joint_size = joint_sensor.size();
+    int pose_size = tool_poses.size();
+    if( joint_size != nData || pose_size!= nData ){
+        ROS_ERROR("-Size of the data sets are incorrrect!-");
+    }else{
+        for (int i = 0; i < joint_sensor.size(); ++i) {
+            Eigen::Affine3d a1_pos_1 = kinematics.computeAffineOfDH(DH_a_params[0], DH_d1, DH_alpha_params[0],
+                                                                    joint_sensor[i][0] + DH_q_offset0);
+            Eigen::Affine3d a1_pos_2 = kinematics.computeAffineOfDH(DH_a_params[1], DH_d2, DH_alpha_params[1],
+                                                                    joint_sensor[i][1] + DH_q_offset1);
+            Eigen::Affine3d a1_pos_3 = kinematics.computeAffineOfDH(DH_a_params[2], joint_sensor[i][2] + DH_q_offset2,
+                                                                    DH_alpha_params[2], 0.0);
+            Eigen::Affine3d a1_pos_4 = kinematics.computeAffineOfDH(DH_a_params[3], DH_d4, DH_alpha_params[3],
+                                                                    joint_sensor[i][3] + DH_q_offset3);
+
+            Eigen::Affine3d a1_pos = kinematics.affine_frame0_wrt_base_ * a1_pos_1 * a1_pos_2 * a1_pos_3 *
+                                     a1_pos_4;// *a1_5 * a1_6 * a1_7 * kinematics.affine_gripper_wrt_frame6_ ;
+            Eigen::Vector3d a1_trans = a1_pos.translation();
+
+            cv::Mat a1_rvec = cv::Mat::zeros(3, 1, CV_64FC1);
+            computeRodriguesVec(a1_pos, a1_rvec);
+
+            tool_poses[i].tvec_cyl(0) = a1_trans[0];
+            tool_poses[i].tvec_cyl(1) = a1_trans[1];
+            tool_poses[i].tvec_cyl(2) = a1_trans[2];
+            tool_poses[i].rvec_cyl(0) = a1_rvec.at<double>(0, 0);
+            tool_poses[i].rvec_cyl(1) = a1_rvec.at<double>(1, 0);
+            tool_poses[i].rvec_cyl(2) = a1_rvec.at<double>(2, 0);
+
+            newToolModel.computeEllipsePose(tool_poses[i], joint_sensor[i][4], joint_sensor[i][5], joint_sensor[i][6]);
+        }
+    }
+
+}
 
 double OptCalibration::computeError(cv::Mat & cam_matrices_left)
 {
@@ -157,7 +246,7 @@ double OptCalibration::computeError(cv::Mat & cam_matrices_left)
 	/*** do the sampling and get the matching score ***/
     int pose_size = tool_poses.size();
     for (int i = 0; i < pose_size; ++i) {
-        matchingerror = measureFuncSameCam(toolImage_left_arm_1,toolImage_right_arm_1, tool_poses[i], segmented_left[i], segmented_right[i], cam_matrices_left, cam_matrices_right );
+        matchingerror = measureFuncSameCam(toolImage_left_arm_1,toolImage_right_arm_1, tool_poses[i], segmented_left[i], segmented_right[i], cam_matrices_left, cam_matrices_right);
         totalScore += matchingerror;
     }
 
@@ -375,4 +464,47 @@ void OptCalibration::computeSE3(const cv::Mat &vec_6_1, cv::Mat &outputGeometry)
     Rotation_CM0.copyTo(outputGeometry.colRange(0,3).rowRange(0,3));
     Tvec_CM0.copyTo(outputGeometry.colRange(3,4).rowRange(0,3));
 
+};
+
+cv::Mat OptCalibration::segmentation(cv::Mat &rawImage) {
+
+    cv::Mat src, src_gray;
+    cv::Mat grad;
+
+    cv::Mat res;
+    src = rawImage;
+
+    resize(src, src, cv::Size(), 1, 1);
+
+    double lowThresh = 28;
+
+    cv::cvtColor(src, src_gray, CV_BGR2GRAY);
+
+    blur(src_gray, src_gray, cv::Size(3, 3));
+
+    Canny(src_gray, grad, lowThresh, 4 * lowThresh, 3); //use Canny segmentation
+
+    grad.convertTo(res, CV_32FC1);
+
+    return res;
+
+}
+
+void OptCalibration::computeRodriguesVec(const Eigen::Affine3d &trans, cv::Mat &rot_vec) {
+    Eigen::Matrix3d rot_affine = trans.rotation();
+
+    cv::Mat rot(3, 3, CV_64FC1);
+    rot.at<double>(0, 0) = rot_affine(0, 0);
+    rot.at<double>(0, 1) = rot_affine(0, 1);
+    rot.at<double>(0, 2) = rot_affine(0, 2);
+    rot.at<double>(1, 0) = rot_affine(1, 0);
+    rot.at<double>(1, 1) = rot_affine(1, 1);
+    rot.at<double>(1, 2) = rot_affine(1, 2);
+    rot.at<double>(2, 0) = rot_affine(2, 0);
+    rot.at<double>(2, 1) = rot_affine(2, 1);
+    rot.at<double>(2, 2) = rot_affine(2, 2);
+
+    rot_vec = cv::Mat::zeros(3, 1, CV_64FC1);
+    cv::Rodrigues(rot, rot_vec);
+    //ROS_INFO_STREAM("rot_vec " << rot_vec);
 };
