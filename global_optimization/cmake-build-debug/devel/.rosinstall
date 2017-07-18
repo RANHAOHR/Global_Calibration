@@ -1,0 +1,2 @@
+- setup-file:
+    local-name: /home/ranhao/ros_ws/src/Global_Calibration/global_optimization/cmake-build-debug/devel/setup.sh

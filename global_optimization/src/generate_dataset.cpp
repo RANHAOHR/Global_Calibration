@@ -8,13 +8,43 @@
 #include <cwru_opencv_common/projective_geometry.h>
 #include <optimization_calibration/optimization_calibration.h>
 
-
 bool freshImage;
 
 using namespace std;
 using namespace cv_projective;
 
+//get image size from camera model, or initialize segmented images
+cv::Mat rawImage_left = cv::Mat::zeros(480, 640, CV_8UC3);//CV_32FC1
+cv::Mat rawImage_right = cv::Mat::zeros(480, 640, CV_8UC3);
 
+void newImageCallback(const sensor_msgs::ImageConstPtr &msg, cv::Mat *outputImage) {
+    cv_bridge::CvImagePtr cv_ptr;
+    try {
+        //cv::Mat src =  cv_bridge::toCvShare(msg,"32FC1")->image;
+        //outputImage[0] = src.clone();
+        cv_ptr = cv_bridge::toCvCopy(msg);
+        outputImage[0] = cv_ptr->image;
+        freshImage = true;
+    }
+    catch (cv_bridge::Exception &e) {
+        ROS_ERROR("Could not convert from '%s' to 'bgr8'.", msg->encoding.c_str());
+    }
+
+}
+
+/**
+ * To let callbrack happen at certain rate, but seems not very helpful just leave it
+ */
+void timerCallback(const ros::TimerEvent&)
+{
+    /*** if camera is ready, show the image ***/
+    if (freshImage) {
+        cv::imshow("raw image left: ", rawImage_left);
+        cv::imshow("raw image right: ", rawImage_right);
+        cv::waitKey(10);
+    }
+
+}
 
 int main(int argc, char **argv) {
 
@@ -22,45 +52,47 @@ int main(int argc, char **argv) {
 
     ros::NodeHandle nodeHandle;
 
-/*    cv::Mat test_image = cv::Mat::zeros(480, 640, CV_8UC3);
+    freshImage = false;
+    
+    image_transport::ImageTransport it(nodeHandle);
+    image_transport::Subscriber img_sub_l = it.subscribe(
+            "/davinci_endo/left/image_raw", 1, boost::function<void(const sensor_msgs::ImageConstPtr &)>(boost::bind(newImageCallback, _1, &rawImage_left)));
+
+    image_transport::Subscriber img_sub_r = it.subscribe(
+            "/davinci_endo/right/image_raw", 1, boost::function<void(const sensor_msgs::ImageConstPtr &)>(boost::bind(newImageCallback, _1, &rawImage_right)));
+
+    ROS_INFO("---- done subscribe -----");
+
+    ros::Timer timer = nodeHandle.createTimer(ros::Duration(0.01), timerCallback);
+
+    int count = 1;
     std::string data_pkg = ros::package::getPath("global_optimization");
 
     char index[16];
 
-    int a = 1;
-    sprintf(index, "%d", a);
-    string ipic(index);
+    while (nodeHandle.ok()) {
+        ros::spinOnce();
 
-    string filename = data_pkg + "/left_pics/" + ipic + ".png";
-    test_image = cv::imread(filename);
+        if (freshImage) {
+//            cout << "Press Enter to write image";
+//            cin.ignore();
+//
+//            if( cin.get() == '\n'){
 
-    cv::imshow("test_image: ", test_image);
-    cv::waitKey(10);
+            sprintf(index, "%d", count);
+            string ipic(index);
 
-    std::vector<std::vector<double> > joint_sensor;
+            string left_fname = data_pkg + "/left_pics/" + ipic + ".png";
+            imwrite(left_fname, rawImage_left);
 
-    joint_sensor.resize(3);
-    for (int k = 0; k < 3; ++k) {
-        joint_sensor[k].resize(7);
-    }
+            string right_fname = data_pkg + "/right_pics/" + ipic + ".png";
+            imwrite(right_fname, rawImage_right);
 
-    string jsp_path = data_pkg + "/touchy.jsp";
-    fstream jspfile(jsp_path.c_str(), std::ios_base::in);
-    std::vector<double > temp_sensor;
-    double temp;
-    while(jspfile >> temp){
-        temp_sensor.push_back(temp);
-        printf("%f ", temp);
-    }
-
-    for (int i = 0; i < 3; ++i) {
-        for (int j = 0; j < 7; ++j) {
-            int index = i* 7 + j;
-            joint_sensor[i][j] = temp_sensor[index];
-
+            count +=1;
+//            }
         }
+        ros::Duration(5).sleep();
 
-    }*/
-
+    }
 
 }

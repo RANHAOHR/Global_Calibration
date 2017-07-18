@@ -21,15 +21,10 @@ int main(int argc, char **argv) {
 	OptCalibration OptCalibration(&nh);
 
     freshImage = false;
-    //freshVelocity = false;//Moving all velocity-related things inside of the kalman.
-
-    //TODO: get image size from camera model
-
 
     ROS_INFO("---- done subscribe -----");
 
     ros::Duration(2).sleep();
-	/****TODO: Temp Projection matrices****/
 
 	while (nh.ok()) {
 		ros::spinOnce();

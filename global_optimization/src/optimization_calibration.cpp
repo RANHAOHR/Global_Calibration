@@ -128,7 +128,6 @@ void OptCalibration::projectionLeftCB(const sensor_msgs::CameraInfo::ConstPtr &p
 
 void OptCalibration::optimizationMain(){
 
-
 };
 
 void OptCalibration::getToolPoses(){
@@ -227,17 +226,9 @@ void OptCalibration::convertJointToPose(){
 double OptCalibration::computeError(cv::Mat & cam_matrices_left)
 {
     ros::spinOnce();
-
-//	 newToolModel.renderTool(raw_image_left, predicted_real_pose, Cam_left_arm_1, P_left);
-//	 newToolModel.renderTool(raw_image_right, predicted_real_pose, Cam_right_arm_1, P_right);
-//
-//	 cv::imshow("initial left", raw_image_left);
-//	 cv::imshow("initial right", raw_image_right);
-//   cv::waitKey();
 	/***Update according to the max score***/
 	double matchingerror;
 	double totalScore = 0.0; //total score
-
     /**
      * Compute the right camera matrix using the offset matrix
      */
