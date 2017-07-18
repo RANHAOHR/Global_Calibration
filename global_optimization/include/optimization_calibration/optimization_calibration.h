@@ -68,7 +68,7 @@
 
 //#include <cwru_xform_utils/xform_utils.h>
 #include <xform_utils/xform_utils.h>
-
+#include <geometry_msgs/Pose.h>
 #include <iostream>
 #include <fstream>
 
@@ -101,21 +101,12 @@ private:
 
 	std::vector<double> matchingScores; // particle scores (matching scores)
 
-	std::vector<cv::Mat > g_CB;
-
     std::vector<std::vector<double> > joint_sensor;
-
 
     cv::Mat Cam_left_arm_1;
     cv::Mat Cam_right_arm_1;
 
     Davinci_fwd_solver kinematics;
-
-	void projectionRightCB(const sensor_msgs::CameraInfo::ConstPtr &projectionRight);
-	void projectionLeftCB(const sensor_msgs::CameraInfo::ConstPtr &projectionLeft);
-
-	ros::Subscriber projectionMat_subscriber_r;
-	ros::Subscriber projectionMat_subscriber_l;
 
     cv::Mat g_cr_cl;
 
@@ -184,7 +175,7 @@ public:
 
 	void computeSE3(const cv::Mat &vec_6_1, cv::Mat &outputGeometry);
 
-    cv::Mat segmentation(cv::Mat &rawImage);
+    cv::Mat segmentation(cv::Mat &InputImg);
 
     void convertJointToPose();
 

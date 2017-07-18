@@ -41,7 +41,7 @@
 using namespace std;
 
 OptCalibration::OptCalibration(ros::NodeHandle *nodehandle):
-        node_handle(*nodehandle), L(13), nData(1)
+        node_handle(*nodehandle), L(13), nData(5)
 {
     /********** using calibration results: camera-base transformation *******/
     g_cr_cl = cv::Mat::eye(4, 4, CV_64FC1);
@@ -61,9 +61,6 @@ OptCalibration::OptCalibration(ros::NodeHandle *nodehandle):
 
 	ROS_INFO_STREAM("Cam_left_arm_1: " << Cam_left_arm_1);
 
-	projectionMat_subscriber_r = node_handle.subscribe("/davinci_endo/right/camera_info", 1, &OptCalibration::projectionRightCB, this);
-	projectionMat_subscriber_l = node_handle.subscribe("/davinci_endo/left/camera_info", 1, &OptCalibration::projectionLeftCB, this);
-
 	toolImage_left_arm_1 = cv::Mat::zeros(480, 640, CV_8UC3);
 	toolImage_right_arm_1 = cv::Mat::zeros(480, 640, CV_8UC3);
 
@@ -73,60 +70,36 @@ OptCalibration::OptCalibration(ros::NodeHandle *nodehandle):
 	P_left = cv::Mat::zeros(3,4,CV_64FC1);
 	P_right = cv::Mat::zeros(3,4,CV_64FC1);
 
+    P_left = (cv::Mat_<double>(3, 4) << 893.78525, 0, 288.4443, 0,
+            0, 893.78525, 259.7727, 0,
+            0, 0, 1, 0);
+
+    P_right = (cv::Mat_<double>(3, 4) << 893.78525, 0, 288.4443, 4.73295,
+            0, 893.78525, 259.7727, 0,
+            0, 0, 1, 0);
+
 	freshCameraInfo = false;
 
     kinematics = Davinci_fwd_solver();
+
     getToolPoses();
 
+    geometry_msgs::Pose test;
+    test.position.x = 1.0;
 };
 
 OptCalibration::~OptCalibration() {
 
 };
 
-void OptCalibration::projectionRightCB(const sensor_msgs::CameraInfo::ConstPtr &projectionRight){
-
-	P_right.at<double>(0,0) = projectionRight->P[0];
-	P_right.at<double>(0,1) = projectionRight->P[1];
-	P_right.at<double>(0,2) = projectionRight->P[2];
-	P_right.at<double>(0,3) = projectionRight->P[3];
-
-	P_right.at<double>(1,0) = projectionRight->P[4];
-	P_right.at<double>(1,1) = projectionRight->P[5];
-	P_right.at<double>(1,2) = projectionRight->P[6];
-	P_right.at<double>(1,3) = projectionRight->P[7];
-
-	P_right.at<double>(2,0) = projectionRight->P[8];
-	P_right.at<double>(2,1) = projectionRight->P[9];
-	P_right.at<double>(2,2) = projectionRight->P[10];
-	P_right.at<double>(2,3) = projectionRight->P[11];
-
-	//ROS_INFO_STREAM("right: " << P_right);
-	freshCameraInfo = true;
-};
-
-void OptCalibration::projectionLeftCB(const sensor_msgs::CameraInfo::ConstPtr &projectionLeft){
-
-	P_left.at<double>(0,0) = projectionLeft->P[0];
-	P_left.at<double>(0,1) = projectionLeft->P[1];
-	P_left.at<double>(0,2) = projectionLeft->P[2];
-	P_left.at<double>(0,3) = projectionLeft->P[3];
-
-	P_left.at<double>(1,0) = projectionLeft->P[4];
-	P_left.at<double>(1,1) = projectionLeft->P[5];
-	P_left.at<double>(1,2) = projectionLeft->P[6];
-	P_left.at<double>(1,3) = projectionLeft->P[7];
-
-	P_left.at<double>(2,0) = projectionLeft->P[8];
-	P_left.at<double>(2,1) = projectionLeft->P[9];
-	P_left.at<double>(2,2) = projectionLeft->P[10];
-	P_left.at<double>(2,3) = projectionLeft->P[11];
-
-	//ROS_INFO_STREAM("left: " << P_left);
-	freshCameraInfo = true;
-};
-
 void OptCalibration::optimizationMain(){
+
+    cv::Mat seed_g_CB = (cv::Mat_<double>(4, 4) << -0.7882, 0.6067, 0.1025, -0.1449,
+            0.5854, 0.7909, -0.1784, -0.0607,
+            -0.1894, -0.0806, -0.9786, 0.0200,
+            0, 0, 0, 1.0000);
+
+    particleSwarmOptimization(seed_g_CB);
 
 };
 
@@ -136,7 +109,6 @@ void OptCalibration::getToolPoses(){
 
     left_raw_images.resize(nData);
     right_raw_images.resize(nData);
-
     char index[16];
     /**
      * read images from left and right image pool
@@ -155,35 +127,38 @@ void OptCalibration::getToolPoses(){
     /**
      * get segmented images
      */
+    segmented_left.resize(nData);
+    segmented_right.resize(nData);
     for (int j = 0; j < nData; ++j) {
         segmented_left[j] = segmentation(left_raw_images[j]);
         segmented_right[j] = segmentation(right_raw_images[j]);
-    }
-    /**
-     * get the corresponding joint sensor poses for all images
-     */
-    joint_sensor.resize(nData);
-    for (int k = 0; k < nData; ++k) {
-        joint_sensor[k].resize(7);
-    }
 
-    string jsp_path = data_pkg + "/touchy.jsp";
-    fstream jspfile(jsp_path.c_str(), std::ios_base::in);
-    std::vector<double > temp_sensor;
-    double filedata;
-
-    while(jspfile >> filedata){
-        temp_sensor.push_back(filedata);
     }
-
-    for (int i = 0; i < nData; ++i) {
-        for (int j = 0; j < 7; ++j) {
-            int Idx = i* 7 + j;
-            joint_sensor[i][j] = temp_sensor[Idx];
-        }
-    }
-
-    convertJointToPose();
+//    /**
+//     * get the corresponding joint sensor poses for all images
+//     */
+//    joint_sensor.resize(nData);
+//    for (int k = 0; k < nData; ++k) {
+//        joint_sensor[k].resize(7);
+//    }
+//
+//    string jsp_path = data_pkg + "/touchy.jsp";
+//    fstream jspfile(jsp_path.c_str(), std::ios_base::in);
+//    std::vector<double > temp_sensor;
+//    double filedata;
+//
+//    while(jspfile >> filedata){
+//        temp_sensor.push_back(filedata);
+//    }
+//
+//    for (int i = 0; i < nData; ++i) {
+//        for (int j = 0; j < 7; ++j) {
+//            int Idx = i* 7 + j;
+//            joint_sensor[i][j] = temp_sensor[Idx];
+//        }
+//    }
+//
+//    convertJointToPose();
 };
 
 void OptCalibration::convertJointToPose(){
@@ -237,7 +212,7 @@ double OptCalibration::computeError(cv::Mat & cam_matrices_left)
 	/*** do the sampling and get the matching score ***/
     int pose_size = tool_poses.size();
     for (int i = 0; i < pose_size; ++i) {
-        matchingerror = measureFuncSameCam(toolImage_left_arm_1,toolImage_right_arm_1, tool_poses[i], segmented_left[i], segmented_right[i], cam_matrices_left, cam_matrices_right);
+        matchingerror = measureFuncSameCam(toolImage_left_arm_1, toolImage_right_arm_1, tool_poses[i], segmented_left[i], segmented_right[i], cam_matrices_left, cam_matrices_right);
         totalScore += matchingerror;
     }
 
@@ -457,29 +432,28 @@ void OptCalibration::computeSE3(const cv::Mat &vec_6_1, cv::Mat &outputGeometry)
 
 };
 
-cv::Mat OptCalibration::segmentation(cv::Mat &rawImage) {
+cv::Mat OptCalibration::segmentation(cv::Mat &InputImg) {
 
     cv::Mat src, src_gray;
     cv::Mat grad;
 
     cv::Mat res;
-    src = rawImage;
+    src = InputImg;
+    cv::resize(src, src, cv::Size(), 1, 1);
 
-    resize(src, src, cv::Size(), 1, 1);
-
-    double lowThresh = 28;
-
+    double lowThresh = 43;
     cv::cvtColor(src, src_gray, CV_BGR2GRAY);
-
-    blur(src_gray, src_gray, cv::Size(3, 3));
-
-    Canny(src_gray, grad, lowThresh, 4 * lowThresh, 3); //use Canny segmentation
+    cv::blur(src_gray, src_gray, cv::Size(3, 3));
+    cv::Canny(src_gray, grad, lowThresh, 4 * lowThresh, 3); //use Canny segmentation
 
     grad.convertTo(res, CV_32FC1);
+    cv::imshow("res",res);
+    cv::waitKey();
 
     return res;
 
-}
+};
+
 
 void OptCalibration::computeRodriguesVec(const Eigen::Affine3d &trans, cv::Mat &rot_vec) {
     Eigen::Matrix3d rot_affine = trans.rotation();

@@ -33,7 +33,7 @@ void newImageCallback(const sensor_msgs::ImageConstPtr &msg, cv::Mat *outputImag
 }
 
 /**
- * To let callbrack happen at certain rate, but seems not very helpful just leave it
+ * To let callback happen at certain rate, but seems not very helpful just leave it
  */
 void timerCallback(const ros::TimerEvent&)
 {
@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
     ros::NodeHandle nodeHandle;
 
     freshImage = false;
-    
+
     image_transport::ImageTransport it(nodeHandle);
     image_transport::Subscriber img_sub_l = it.subscribe(
             "/davinci_endo/left/image_raw", 1, boost::function<void(const sensor_msgs::ImageConstPtr &)>(boost::bind(newImageCallback, _1, &rawImage_left)));
@@ -65,7 +65,7 @@ int main(int argc, char **argv) {
 
     ros::Timer timer = nodeHandle.createTimer(ros::Duration(0.01), timerCallback);
 
-    int count = 1;
+    int count = 0;
     std::string data_pkg = ros::package::getPath("global_optimization");
 
     char index[16];

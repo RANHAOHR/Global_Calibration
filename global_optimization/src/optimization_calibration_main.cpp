@@ -4,9 +4,6 @@
 #include <cwru_opencv_common/projective_geometry.h>
 #include <optimization_calibration/optimization_calibration.h>
 
-
-bool freshImage;
-
 using namespace std;
 using namespace cv_projective;
 
@@ -20,25 +17,16 @@ int main(int argc, char **argv) {
 	/******  initialization  ******/
 	OptCalibration OptCalibration(&nh);
 
-    freshImage = false;
-
     ROS_INFO("---- done subscribe -----");
 
     ros::Duration(2).sleep();
 
-	while (nh.ok()) {
-		ros::spinOnce();
-		/*** make sure camera information is ready ***/
-
-		/*** if camera is ready, doing the tracking based on segemented image***/
-		if (freshImage) {
-
-//            Particles.trackingTool(seg_left, seg_right); //with rendered tool and segmented img
-
-			freshImage = false;
-
-		}
-
-	}
+//	while (nh.ok()) {
+//		ros::spinOnce();
+//		/*** make sure camera information is ready ***/
+//
+//        OptCalibration.optimizationMain(); //with rendered tool and segmented img
+//
+//	}
 
 }
