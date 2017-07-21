@@ -55,9 +55,9 @@ ToolModel::ToolModel() {
      offset_ellipse = offset_body;
      offset_gripper = offset_ellipse+ 0.007;
 
-//    offset_body = 0.4560; //0.4560
-//    offset_ellipse = offset_body;
-//    offset_gripper = offset_ellipse+ 0.007;
+    offset_body = 0.4560; //0.4560
+    offset_ellipse = offset_body;
+    offset_gripper = offset_ellipse+ 0.007;
 
     /****initialize the vertices fo different part of tools****/
     tool_model_pkg = ros::package::getPath("tool_model_optimization");
@@ -95,7 +95,6 @@ ToolModel::ToolModel() {
                         oval_normal_vertices, oval_normal_Vnormal, oval_normal_faces, oval_normal_neighbors);
     modify_model_(oval_normal_vertices, oval_normal_Vnormal, oval_normal_Vpts, oval_normal_Npts, offset_ellipse, oval_normal_Vmat, oval_normal_Nmat);
     getFaceInfo(oval_normal_faces, oval_normal_Vpts, oval_normal_Npts, oval_normalFace_normal, oval_normalFace_centroid);
-
 
     srand((unsigned) time(NULL)); //for the random number generator, use only once
 };
@@ -266,13 +265,13 @@ void ToolModel::Compute_Silhouette(const std::vector<std::vector<int> > &input_f
                                    const cv::Mat &input_Vmat, const cv::Mat &input_Nmat,
                                    cv::Mat &CamMat, cv::Mat &image, const cv::Mat &rvec, const cv::Mat &tvec,
                                    const cv::Mat &P, cv::OutputArray jac) {
-   // cv::Mat adjoint_mat = (cv::Mat_<double>(4,4) << -1,0,0,0,
-   //         0,1,0,0,
-   //         0,0,-1,0,
-   //         0,0,0,1);
-
-   // cv::Mat temp_input_Vmat = adjoint_mat * input_Vmat;
-   // cv::Mat temp_input_Nmat = adjoint_mat * input_Nmat;
+//    cv::Mat adjoint_mat = (cv::Mat_<double>(4,4) << -1,0,0,0,
+//            0,1,0,0,
+//            0,0,-1,0,
+//            0,0,0,1);
+//
+//    input_Vmat = adjoint_mat * input_Vmat;
+//    input_Nmat = adjoint_mat * input_Nmat;
 
     cv::Mat new_Vertices = transformPoints(input_Vmat, rvec, tvec);
 
@@ -922,41 +921,45 @@ float ToolModel::calculateChamferScore(cv::Mat &toolImage, const cv::Mat &segmen
     cv::Mat BinaryImg(toolImFloat.size(), toolImFloat.type());
     BinaryImg = toolImFloat * (1.0/255);
 
-    /***segmented image process**/
-    for (int i = 0; i < segImgGrey.rows; i++) {
-        for (int j = 0; j < segImgGrey.cols; j++) {
-            segImgGrey.at<uchar>(i,j) = 255 - segImgGrey.at<uchar>(i,j);
+    if(countNonZero(BinaryImg) < 1){
+        output = 1000;
+    }else{
+        /***segmented image process**/
+        for (int i = 0; i < segImgGrey.rows; i++) {
+            for (int j = 0; j < segImgGrey.cols; j++) {
+                segImgGrey.at<uchar>(i,j) = 255 - segImgGrey.at<uchar>(i,j);
 
+            }
         }
-    }
 
-    cv::Mat normDIST;
-    cv::Mat distance_img;
-    cv::distanceTransform(segImgGrey, distance_img, CV_DIST_L2, 3);
-    cv::normalize(distance_img, normDIST, 0.00, 1.00, cv::NORM_MINMAX);
+        cv::Mat normDIST;
+        cv::Mat distance_img;
+        cv::distanceTransform(segImgGrey, distance_img, CV_DIST_L2, 3);
+        cv::normalize(distance_img, normDIST, 0.00, 1.00, cv::NORM_MINMAX);
 
 //    cv::imshow("segImgGrey img", segImgGrey);
 //    cv::imshow("Normalized img", normDIST);
 ////    cv::imshow("distance_img", distance_img);
 //    cv::waitKey();
 
-    /***multiplication process**/
-    cv::Mat resultImg; //initialize
-    cv::multiply(normDIST, BinaryImg, resultImg);
+        /***multiplication process**/
+        cv::Mat resultImg; //initialize
+        cv::multiply(normDIST, BinaryImg, resultImg);
 
-    for (int k = 0; k < resultImg.rows; ++k) {
-        for (int i = 0; i < resultImg.cols; ++i) {
+        for (int k = 0; k < resultImg.rows; ++k) {
+            for (int i = 0; i < resultImg.cols; ++i) {
 
-            double mul = resultImg.at<float>(k,i);
-            if(mul > 0.0)
-                output += mul;
+                double mul = resultImg.at<float>(k,i);
+                if(mul > 0.0)
+                    output += mul;
+            }
         }
-    }
-    /**
-     * Didn't flip the score because in this pkg we need the errors instead of matching score
-     */
+        /**
+         * Didn't flip the score because in this pkg we need the errors instead of matching score
+         */
 //    //ROS_INFO_STREAM("OUTPUT: " << output);
 //    output = exp(-1 * output/80);
+    }
 
     return output;
 

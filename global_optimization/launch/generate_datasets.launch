@@ -1,0 +1,16 @@
+<launch>
+
+   <!-- Load the video, put in a bag file -->
+   <arg name ="file_name" default="81_sample_pts.bag"/>
+   <arg name ="dest_path" default="/home/ranhao/ros_ws/src"/>  
+
+   <node name ="player" pkg="rosbag" type="play" output="screen" args="--clock $(arg dest_path)/$(arg file_name)"/>
+
+   <!-- Generate data sets node -->
+   <node name="optimizer" pkg="global_optimization" type="generate_dataset" respawn="false" output="screen" />
+
+   <!-- Generate data sets node -->
+   <node name="check_video" pkg="global_optimization" type="check_video" respawn="false" output="screen" />
+
+
+</launch>

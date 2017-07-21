@@ -7,8 +7,6 @@
 using namespace std;
 using namespace cv_projective;
 
-
-
 int main(int argc, char **argv) {
 
 	ros::init(argc, argv, "tracking_node");
@@ -21,12 +19,12 @@ int main(int argc, char **argv) {
 
     ros::Duration(2).sleep();
 
-//	while (nh.ok()) {
-//		ros::spinOnce();
-//		/*** make sure camera information is ready ***/
-//
-//        OptCalibration.optimizationMain(); //with rendered tool and segmented img
-//
-//	}
+	while (nh.ok()) {
+		ros::spinOnce();
+		/*** make sure camera information is ready ***/
+
+        OptCalibration.optimizationMain(); //with rendered tool and segmented img
+
+	}
 
 }

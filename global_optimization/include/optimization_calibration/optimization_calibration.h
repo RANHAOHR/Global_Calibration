@@ -62,11 +62,9 @@
 #include <geometry_msgs/Transform.h>
 #include <cwru_davinci_interface/davinci_interface.h>
 
-#include <tf/transform_listener.h>
 #include <cwru_davinci_interface/davinci_interface.h>
 #include <cwru_davinci_kinematics/davinci_kinematics.h>
 
-//#include <cwru_xform_utils/xform_utils.h>
 #include <xform_utils/xform_utils.h>
 #include <geometry_msgs/Pose.h>
 #include <iostream>
@@ -96,15 +94,9 @@ private:
 	cv::Mat toolImage_left_arm_1; //left rendered Image for ARM 1
 	cv::Mat toolImage_right_arm_1; //right rendered Image for ARM 1
 
-	cv::Mat toolImage_left_temp; //left rendered Image
-	cv::Mat toolImage_right_temp; //right rendered Image
-
 	std::vector<double> matchingScores; // particle scores (matching scores)
 
     std::vector<std::vector<double> > joint_sensor;
-
-    cv::Mat Cam_left_arm_1;
-    cv::Mat Cam_right_arm_1;
 
     Davinci_fwd_solver kinematics;
 
@@ -154,7 +146,7 @@ public:
  * @param cam_matrices_left
  * @return a total error computed using the data set and input camera-robot base transformation
  */
-    double computeError(cv::Mat & cam_matrices_left);
+    double computeError(cv::Mat & cam_vector_left);
 
 /**
  * @brief get the p(z_t|x_t), compute the matching score based on the camera view image and rendered image
@@ -170,7 +162,7 @@ public:
 	double measureFuncSameCam(cv::Mat & toolImage_left, cv::Mat & toolImage_right, ToolModel::toolModel &toolPose,
 							  const cv::Mat &segmented_left, const cv::Mat &segmented_right, cv::Mat &Cam_left, cv::Mat &Cam_right);
 
-	void particleSwarmOptimization(const cv::Mat &G_CB);
+	void particleSwarmOptimization(const cv::Mat &g_CB_vec);
 	void boundaryCheck(cv::Mat &particle);
 
 	void computeSE3(const cv::Mat &vec_6_1, cv::Mat &outputGeometry);

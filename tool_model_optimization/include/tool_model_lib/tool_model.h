@@ -185,10 +185,6 @@ public:
     void renderTool(cv::Mat &image, const toolModel &tool, cv::Mat &CamMat, const cv::Mat &P,
                         cv::OutputArray = cv::noArray());
 
-    //need vertex normals to compute measurement model
-    void renderToolUKF(cv::Mat &image, const toolModel &tool, cv::Mat &CamMat, const cv::Mat &P,
-                       cv::Mat &tool_points, cv::Mat &tool_normals, cv::OutputArray = cv::noArray());
-
 
     cv::Point2d reproject(const cv::Mat &point, const cv::Mat &P);
 

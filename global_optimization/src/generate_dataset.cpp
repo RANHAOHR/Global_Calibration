@@ -35,16 +35,14 @@ void newImageCallback(const sensor_msgs::ImageConstPtr &msg, cv::Mat *outputImag
 /**
  * To let callback happen at certain rate, but seems not very helpful just leave it
  */
-void timerCallback(const ros::TimerEvent&)
-{
-    /*** if camera is ready, show the image ***/
-    if (freshImage) {
-        cv::imshow("raw image left: ", rawImage_left);
-        cv::imshow("raw image right: ", rawImage_right);
-        cv::waitKey(10);
-    }
-
-}
+//void timerCallback(const ros::TimerEvent&)
+//{
+//    /*** if camera is ready, show the image ***/
+//    if (freshImage) {
+//
+//    }
+//
+//}
 
 int main(int argc, char **argv) {
 
@@ -63,21 +61,19 @@ int main(int argc, char **argv) {
 
     ROS_INFO("---- done subscribe -----");
 
-    ros::Timer timer = nodeHandle.createTimer(ros::Duration(0.01), timerCallback);
+    //ros::Timer timer = nodeHandle.createTimer(ros::Duration(0.01), timerCallback);
 
     int count = 0;
     std::string data_pkg = ros::package::getPath("global_optimization");
 
     char index[16];
 
+    ros::Duration(14).sleep(); //starting wait until first pose pop
+
     while (nodeHandle.ok()) {
         ros::spinOnce();
 
         if (freshImage) {
-//            cout << "Press Enter to write image";
-//            cin.ignore();
-//
-//            if( cin.get() == '\n'){
 
             sprintf(index, "%d", count);
             string ipic(index);
@@ -88,11 +84,14 @@ int main(int argc, char **argv) {
             string right_fname = data_pkg + "/right_pics/" + ipic + ".png";
             imwrite(right_fname, rawImage_right);
 
-            count +=1;
-//            }
-        }
-        ros::Duration(5).sleep();
+            cv::imshow("cut image left: ", rawImage_left);
+            cv::imshow("cut image right: ", rawImage_right);
+            cv::waitKey(5);
 
+            count +=1;
+
+        }
+        ros::Duration(10.1).sleep();
     }
 
 }

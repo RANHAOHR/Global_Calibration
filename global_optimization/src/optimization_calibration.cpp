@@ -41,7 +41,7 @@
 using namespace std;
 
 OptCalibration::OptCalibration(ros::NodeHandle *nodehandle):
-        node_handle(*nodehandle), L(13), nData(5)
+        node_handle(*nodehandle), L(13), nData(70)
 {
     /********** using calibration results: camera-base transformation *******/
     g_cr_cl = cv::Mat::eye(4, 4, CV_64FC1);
@@ -54,18 +54,8 @@ OptCalibration::OptCalibration(ros::NodeHandle *nodehandle):
     cv::Mat p = (cv::Mat_<double>(3, 1) << -0.015, 0.0, 0.00); //-0.011, 0.0, 0.00
     p.copyTo(g_cr_cl.colRange(3, 4).rowRange(0, 3));
 
-    Cam_left_arm_1 = (cv::Mat_<double>(4,4) << -0.7882, 0.6067, 0.1025, -0.1449,
-            0.5854, 0.7909, -0.1784, -0.0607,
-            -0.1894, -0.0806, -0.9786, 0.0200,
-            0, 0, 0, 1.0000);
-
-	ROS_INFO_STREAM("Cam_left_arm_1: " << Cam_left_arm_1);
-
 	toolImage_left_arm_1 = cv::Mat::zeros(480, 640, CV_8UC3);
 	toolImage_right_arm_1 = cv::Mat::zeros(480, 640, CV_8UC3);
-
-	toolImage_left_temp = cv::Mat::zeros(480, 640, CV_8UC3);
-	toolImage_right_temp = cv::Mat::zeros(480, 640, CV_8UC3);
 
 	P_left = cv::Mat::zeros(3,4,CV_64FC1);
 	P_right = cv::Mat::zeros(3,4,CV_64FC1);
@@ -84,8 +74,6 @@ OptCalibration::OptCalibration(ros::NodeHandle *nodehandle):
 
     getToolPoses();
 
-    geometry_msgs::Pose test;
-    test.position.x = 1.0;
 };
 
 OptCalibration::~OptCalibration() {
@@ -94,12 +82,13 @@ OptCalibration::~OptCalibration() {
 
 void OptCalibration::optimizationMain(){
 
-    cv::Mat seed_g_CB = (cv::Mat_<double>(4, 4) << -0.7882, 0.6067, 0.1025, -0.1449,
-            0.5854, 0.7909, -0.1784, -0.0607,
-            -0.1894, -0.0806, -0.9786, 0.0200,
-            0, 0, 0, 1.0000);
+    /* -0.12033, -0.04072, 0.01142, 1.02296677, 2.6807519, -0.110696 */
+    /* -0.12033, -0.04072, 0.02042, 1.02296677, 2.6807519, -0.110696 */
+    /* -0.127242, -0.04223243868011364, 0.02144292022445054, 1.022493674490063, 2.679760657738501, -0.109826486525038 */
 
-    particleSwarmOptimization(seed_g_CB);
+    cv::Mat Cam_left_vec = (cv::Mat_<double>(6,1) << -0.1286624619928083, -0.04274536819101153, 0.0257695191703324, 1.02223431858501, 2.681807130327333, -0.1112189970810531);
+
+    particleSwarmOptimization(Cam_left_vec);
 
 };
 
@@ -132,40 +121,41 @@ void OptCalibration::getToolPoses(){
     for (int j = 0; j < nData; ++j) {
         segmented_left[j] = segmentation(left_raw_images[j]);
         segmented_right[j] = segmentation(right_raw_images[j]);
-
     }
-//    /**
-//     * get the corresponding joint sensor poses for all images
-//     */
-//    joint_sensor.resize(nData);
-//    for (int k = 0; k < nData; ++k) {
-//        joint_sensor[k].resize(7);
-//    }
-//
-//    string jsp_path = data_pkg + "/touchy.jsp";
-//    fstream jspfile(jsp_path.c_str(), std::ios_base::in);
-//    std::vector<double > temp_sensor;
-//    double filedata;
-//
-//    while(jspfile >> filedata){
-//        temp_sensor.push_back(filedata);
-//    }
-//
-//    for (int i = 0; i < nData; ++i) {
-//        for (int j = 0; j < 7; ++j) {
-//            int Idx = i* 7 + j;
-//            joint_sensor[i][j] = temp_sensor[Idx];
-//        }
-//    }
-//
-//    convertJointToPose();
+    /**
+     * get the corresponding joint sensor poses for all images
+     */
+    joint_sensor.resize(nData);
+    for (int k = 0; k < nData; ++k) {
+        joint_sensor[k].resize(7);
+    }
+
+    string jsp_path = data_pkg + "/playfiles/81_pts.jsp";
+    fstream jspfile(jsp_path.c_str(), std::ios_base::in);
+    std::vector<double > temp_sensor;
+    double filedata;
+
+    while(jspfile >> filedata){
+        temp_sensor.push_back(filedata);
+    }
+
+    for (int i = 0; i < nData; ++i) {
+        for (int j = 0; j < 7; ++j) {
+            int Idx = i* 7 + j;
+            joint_sensor[i][j] = temp_sensor[Idx];
+        }
+    }
+    ROS_INFO_STREAM("joint_sensor size is : " << joint_sensor.size());
+
+    convertJointToPose();
 };
 
 void OptCalibration::convertJointToPose(){
 
+    tool_poses.resize(nData); //initialize the vector
+
     int joint_size = joint_sensor.size();
-    int pose_size = tool_poses.size();
-    if( joint_size != nData || pose_size!= nData ){
+    if( joint_size != nData){
         ROS_ERROR("-Size of the data sets are incorrrect!-");
     }else{
         for (int i = 0; i < joint_sensor.size(); ++i) {
@@ -178,8 +168,7 @@ void OptCalibration::convertJointToPose(){
             Eigen::Affine3d a1_pos_4 = kinematics.computeAffineOfDH(DH_a_params[3], DH_d4, DH_alpha_params[3],
                                                                     joint_sensor[i][3] + DH_q_offset3);
 
-            Eigen::Affine3d a1_pos = kinematics.affine_frame0_wrt_base_ * a1_pos_1 * a1_pos_2 * a1_pos_3 *
-                                     a1_pos_4;// *a1_5 * a1_6 * a1_7 * kinematics.affine_gripper_wrt_frame6_ ;
+            Eigen::Affine3d a1_pos = kinematics.affine_frame0_wrt_base_ * a1_pos_1 * a1_pos_2 * a1_pos_3 * a1_pos_4;// *a1_5 * a1_6 * a1_7 * kinematics.affine_gripper_wrt_frame6_ ;
             Eigen::Vector3d a1_trans = a1_pos.translation();
 
             cv::Mat a1_rvec = cv::Mat::zeros(3, 1, CV_64FC1);
@@ -194,11 +183,13 @@ void OptCalibration::convertJointToPose(){
 
             newToolModel.computeEllipsePose(tool_poses[i], joint_sensor[i][4], joint_sensor[i][5], joint_sensor[i][6]);
         }
+
     }
 
 }
 
-double OptCalibration::computeError(cv::Mat & cam_matrices_left)
+/** The optimization functions **/
+double OptCalibration::computeError(cv::Mat & cam_vector_left)
 {
     ros::spinOnce();
 	/***Update according to the max score***/
@@ -207,6 +198,9 @@ double OptCalibration::computeError(cv::Mat & cam_matrices_left)
     /**
      * Compute the right camera matrix using the offset matrix
      */
+    cv::Mat cam_matrices_left;
+    computeSE3(cam_vector_left, cam_matrices_left);
+
     cv::Mat cam_matrices_right = g_cr_cl * cam_matrices_left;
 
 	/*** do the sampling and get the matching score ***/
@@ -214,6 +208,20 @@ double OptCalibration::computeError(cv::Mat & cam_matrices_left)
     for (int i = 0; i < pose_size; ++i) {
         matchingerror = measureFuncSameCam(toolImage_left_arm_1, toolImage_right_arm_1, tool_poses[i], segmented_left[i], segmented_right[i], cam_matrices_left, cam_matrices_right);
         totalScore += matchingerror;
+
+//        /** debug */
+//        cv::Mat test_seg_l = segmented_left[i].clone();
+//        cv::Mat test_seg_r = segmented_right[i].clone();
+//
+//        newToolModel.renderTool(test_seg_l, tool_poses[i], cam_matrices_left, P_left);
+//        newToolModel.renderTool(test_seg_r, tool_poses[i], cam_matrices_right, P_right);
+//
+//        cv::imshow("debug left ", test_seg_l );
+//        cv::imshow("debug right ", test_seg_r );
+//
+//        ROS_INFO_STREAM("matchingerror " << matchingerror);
+//
+//        cv::waitKey();
     }
 
     return  totalScore;
@@ -238,29 +246,18 @@ double OptCalibration::measureFuncSameCam(cv::Mat & toolImage_left, cv::Mat & to
 	return matchingScore;
 };
 
-void OptCalibration::particleSwarmOptimization(const cv::Mat &G_CB) {
+void OptCalibration::particleSwarmOptimization(const cv::Mat &g_CB_vec) {
 
-    int Num = 40000;  //number of particles
+    int Num = 1000;  //number of particles 40000
     double c1 = 2; //flying weights according to the local best
     double c2 = 2; //flying weights according to the global best
-    int MaxIter = 100;  //max iteration
+    int MaxIter = 10;  //max iteration
     double w = 0.75;  //speed weight
 
     //initialization
-    cv::Mat Rot = G_CB.colRange(0, 3).rowRange(0, 3); //Rx
-    cv::Mat p = G_CB.colRange(3, 4).rowRange(0, 3); //Px
-
-    cv::Mat Rvec(3, 1, CV_64FC1);
-    cv::Rodrigues(Rot, Rvec);
-
-    cv::Mat vec_CM0(6, 1, CV_64FC1);  ///a new vec for representing G_CM0
-
-    vec_CM0.at<double>(0, 0) = p.at<double>(0, 0);
-    vec_CM0.at<double>(1, 0) = p.at<double>(1, 0);
-    vec_CM0.at<double>(2, 0) = p.at<double>(2, 0);
-    vec_CM0.at<double>(3, 0) = Rvec.at<double>(0, 0);
-    vec_CM0.at<double>(4, 0) = Rvec.at<double>(1, 0);
-    vec_CM0.at<double>(5, 0) = Rvec.at<double>(2, 0);
+    cv::Mat vec_CB(6, 1, CV_64FC1);  ///a new vec for representing G_CB
+    vec_CB = g_CB_vec.clone();
+    ROS_INFO_STREAM("vec_CB " << vec_CB);
 
     std::vector<double> local_errorG_CB;
 
@@ -273,8 +270,8 @@ void OptCalibration::particleSwarmOptimization(const cv::Mat &G_CB) {
     velocities.resize(Num);
     local_errorG_CB.resize(Num);
 
-    cv::Mat temp_vel(6, 1, CV_64FC1);  ///a new vec for representing G_CM0
-    cv::Mat temp_particle(6, 1, CV_64FC1);  ///a new vec for representing G_CM0
+    cv::Mat temp_vel(6, 1, CV_64FC1);  ///a new vec for representing G_CB
+    cv::Mat temp_particle(6, 1, CV_64FC1);  ///a new vec for representing G_CB
 
     double temp_errorValue;
 
@@ -282,37 +279,46 @@ void OptCalibration::particleSwarmOptimization(const cv::Mat &G_CB) {
 
     //initialization for all particles
     for (int i = 0; i < Num; i++) {
+
         //give random velocity
-        double dev_xy = newToolModel.randomNum(-0.05, 0.05);
-        double dev_z = newToolModel.randomNum(-0.01, 0.01);
-        double dev_theta = newToolModel.randomNum(-0.5, 0.5); //(-pi/2, pi/2)
+        double dev_x = newToolModel.randomNumber(0.01, 0.0);
+        double dev_y = newToolModel.randomNumber(0.01, 0.0);
+        double dev_z = newToolModel.randomNumber(0.01, 0.0);
+        double dev_roll = newToolModel.randomNumber(0.001, 0); //
+        double dev_pitch = newToolModel.randomNumber(0.001, 0); //
+        double dev_yaw = newToolModel.randomNumber(0.001, 0); //
+
+//        double dev_x = 0.0;
+//        double dev_y = 0.0;
+//        double dev_z = 0.0;
+//        double dev_roll = 0.0; //
+//        double dev_pitch = 0.0; //
+//        double dev_yaw = 0.0; //
 
         ///random velocity
-        temp_vel.at<double>(0, 0) = dev_xy;
-        temp_vel.at<double>(1, 0) = dev_xy;
+        temp_vel.at<double>(0, 0) = dev_x;
+        temp_vel.at<double>(1, 0) = dev_y;
         temp_vel.at<double>(2, 0) = dev_z;
-        temp_vel.at<double>(3, 0) = dev_theta;
-        temp_vel.at<double>(4, 0) = dev_theta;
-        temp_vel.at<double>(5, 0) = dev_theta;
+        temp_vel.at<double>(3, 0) = dev_roll;
+        temp_vel.at<double>(4, 0) = dev_pitch;
+        temp_vel.at<double>(5, 0) = dev_yaw;
 
         //random particles
-        temp_particle.at<double>(0, 0) = vec_CM0.at<double>(0,0) + dev_xy;
-        temp_particle.at<double>(1, 0) = vec_CM0.at<double>(1,0) + dev_xy;
-        temp_particle.at<double>(2, 0) = vec_CM0.at<double>(2,0) + dev_z;
-        temp_particle.at<double>(3, 0) = vec_CM0.at<double>(3,0) + dev_theta;
-        temp_particle.at<double>(4, 0) = vec_CM0.at<double>(4,0) + dev_theta;
-        temp_particle.at<double>(5, 0) = vec_CM0.at<double>(5,0) + dev_theta;
+        temp_particle.at<double>(0, 0) = vec_CB.at<double>(0,0) + dev_x;
+        temp_particle.at<double>(1, 0) = vec_CB.at<double>(1,0) + dev_y;
+        temp_particle.at<double>(2, 0) = vec_CB.at<double>(2,0) + dev_z;
+        temp_particle.at<double>(3, 0) = vec_CB.at<double>(3,0) + dev_roll;
+        temp_particle.at<double>(4, 0) = vec_CB.at<double>(4,0) + dev_pitch;
+        temp_particle.at<double>(5, 0) = vec_CB.at<double>(5,0) + dev_yaw;
 
         ////Opencv is stupid so don't use push_back unless you like to debug for really long time
         velocities[i] = temp_vel.clone();
-
         temp_errorValue = computeError(temp_particle);
         local_errorG_CB[i] = temp_errorValue; //temporary local best
-
         particles[i] = temp_particle.clone();
         local_best_paticles[i] = temp_particle.clone();
     }
-
+    ROS_WARN(" -FINISHED Initialization- ");
     ///initialize global best
     cv::Mat global_best(6, 1, CV_64FC1);
     global_best = particles[0].clone();
@@ -327,20 +333,30 @@ void OptCalibration::particleSwarmOptimization(const cv::Mat &G_CB) {
     }
 
     ////main iteration
+    ROS_WARN(" -START ITERATION- ");
     for (int iter = 0; iter < MaxIter; iter++) {
 
-        double dev_xy = newToolModel.randomNum(-1, 1);
-        double dev_z = newToolModel.randomNum(-1, 1);
-        double dev_theta = newToolModel.randomNum(-1, 1); //not as much as (-pi/2, pi/2)
+        double dev_x = newToolModel.randomNumber(0.005, 0.0);
+        double dev_y = newToolModel.randomNumber(0.005, 0.0);
+        double dev_z = newToolModel.randomNumber(0.002, 0.0);
+        double dev_roll = newToolModel.randomNumber(0.001, 0.0); //
+        double dev_pitch = newToolModel.randomNumber(0.001, 0.0); //
+        double dev_yaw = newToolModel.randomNumber(0.001, 0.0); //
+
 
         for (int n = 0; n < Num; n++) {
+
+            if(n % 500 == 0){
+                ROS_INFO_STREAM(" n = " << n);
+            }
+
             //update have to use different metric
-            velocities[n].at<double>(0,0) = w * velocities[n].at<double>(0,0) + c1 * dev_xy *(local_best_paticles[n].at<double>(0,0) - particles[n].at<double>(0,0)) + c2 * dev_xy * (global_best.at<double>(0,0) - particles[n].at<double>(0,0));
-            velocities[n].at<double>(1,0) = w * velocities[n].at<double>(1,0) + c1 * dev_xy *(local_best_paticles[n].at<double>(1,0) - particles[n].at<double>(1,0)) + c2 * dev_xy * (global_best.at<double>(1,0) - particles[n].at<double>(1,0));
+            velocities[n].at<double>(0,0) = w * velocities[n].at<double>(0,0) + c1 * dev_x *(local_best_paticles[n].at<double>(0,0) - particles[n].at<double>(0,0)) + c2 * dev_x * (global_best.at<double>(0,0) - particles[n].at<double>(0,0));
+            velocities[n].at<double>(1,0) = w * velocities[n].at<double>(1,0) + c1 * dev_y *(local_best_paticles[n].at<double>(1,0) - particles[n].at<double>(1,0)) + c2 * dev_y * (global_best.at<double>(1,0) - particles[n].at<double>(1,0));
             velocities[n].at<double>(2,0) = w * velocities[n].at<double>(2,0) + c1 * dev_z *(local_best_paticles[n].at<double>(2,0) - particles[n].at<double>(2,0)) + c2 * dev_z * (global_best.at<double>(2,0) - particles[n].at<double>(2,0));
-            velocities[n].at<double>(3,0) = w * velocities[n].at<double>(3,0) + c1 * dev_theta *(local_best_paticles[n].at<double>(3,0) - particles[n].at<double>(3,0)) + c2 * dev_theta * (global_best.at<double>(3,0) - particles[n].at<double>(3,0));
-            velocities[n].at<double>(4,0) = w * velocities[n].at<double>(4,0) + c1 * dev_theta *(local_best_paticles[n].at<double>(4,0) - particles[n].at<double>(4,0)) + c2 * dev_theta * (global_best.at<double>(4,0) - particles[n].at<double>(4,0));
-            velocities[n].at<double>(5,0) = w * velocities[n].at<double>(5,0) + c1 * dev_theta *(local_best_paticles[n].at<double>(5,0) - particles[n].at<double>(5,0)) + c2 * dev_theta * (global_best.at<double>(5,0) - particles[n].at<double>(5,0));
+            velocities[n].at<double>(3,0) = w * velocities[n].at<double>(3,0) + c1 * dev_roll *(local_best_paticles[n].at<double>(3,0) - particles[n].at<double>(3,0)) + c2 * dev_roll * (global_best.at<double>(3,0) - particles[n].at<double>(3,0));
+            velocities[n].at<double>(4,0) = w * velocities[n].at<double>(4,0) + c1 * dev_pitch *(local_best_paticles[n].at<double>(4,0) - particles[n].at<double>(4,0)) + c2 * dev_pitch * (global_best.at<double>(4,0) - particles[n].at<double>(4,0));
+            velocities[n].at<double>(5,0) = w * velocities[n].at<double>(5,0) + c1 * dev_yaw *(local_best_paticles[n].at<double>(5,0) - particles[n].at<double>(5,0)) + c2 * dev_yaw * (global_best.at<double>(5,0) - particles[n].at<double>(5,0));
 
             particles[n] = particles[n] + velocities[n];
 
@@ -349,7 +365,7 @@ void OptCalibration::particleSwarmOptimization(const cv::Mat &G_CB) {
 
             temp_errorValue = computeError(particles[n]);  // the temp error for n-th new G_CM0
 
-//            ROS_INFO_STREAM("local_errorG_CM0 " << local_errorG_CM0[n]);
+            //ROS_INFO_STREAM("local_errorG_CM0 " << local_errorG_CM0[n]);
             // ROS_INFO_STREAM("temp_errorValue " << temp_errorValue);
 
             if (local_errorG_CB[n] > temp_errorValue) { /// update local best if new error is smaller
@@ -369,11 +385,9 @@ void OptCalibration::particleSwarmOptimization(const cv::Mat &G_CB) {
         ROS_INFO_STREAM("minimal error : " << best_value);
         computeSE3(global_best, final_G_CB);
         ROS_INFO_STREAM("global best G_CB: " << final_G_CB);
+        ROS_INFO_STREAM("global best vec: " << global_best);
         ROS_INFO("------------------------");
     }
-
-    computeSE3(global_best, final_G_CB);
-    ROS_INFO_STREAM("global best G_CB: " << final_G_CB);
 
 };
 
@@ -389,23 +403,23 @@ void OptCalibration::boundaryCheck(cv::Mat &particle){
     double temp_yaw = particle.at<double>(5,0);
 
     /********numbers should be close to the real constrains*******/
-    if (temp_x > 0.1 || temp_x < -0.1) {
-        particle.at<double>(0,0) = newToolModel.randomNum(-0.08, 0.08);
+    if (temp_x > -0.012 || temp_x < -0.015) {
+        particle.at<double>(0,0) = newToolModel.randomNum(-0.015, -0.012);
     }
-    if (temp_y > 0.1 || temp_y < -0.1) {
-        particle.at<double>(1,0) = newToolModel.randomNum(-0.08, 0.08);
+    if (temp_y > -0.04 || temp_y < -0.06) {
+        particle.at<double>(1,0) = newToolModel.randomNum(-0.06, -0.04);
     }
-    if (temp_z > 0.19 || temp_z < -0.16) {
-        particle.at<double>(2,0) = newToolModel.randomNum(-0.16, 0.18);
+    if (temp_z > 0.02 || temp_z < 0.017) {
+        particle.at<double>(2,0) = newToolModel.randomNum(0.017, 0.02);
     }
-    if (temp_roll > 1 || temp_roll < -1) {
-        particle.at<double>(3,0) = newToolModel.randomNum(-1, 1);
+    if (temp_roll > 1.19 || temp_roll < 0.9) {
+        particle.at<double>(3,0) = newToolModel.randomNum(0.9, 1.19);
     }
-    if (temp_pitch > 1 || temp_pitch < -1) {
-        particle.at<double>(4,0) = newToolModel.randomNum(-1, 1);
+    if (temp_pitch > 2.8 || temp_pitch < 2.5) {
+        particle.at<double>(4,0) = newToolModel.randomNum(2.5, 2.8);
     }
-    if (temp_yaw > 1 || temp_yaw < -1) {
-        particle.at<double>(5,0) = newToolModel.randomNum(-1, 1);
+    if (temp_yaw > -0.19 || temp_yaw < -0.21) {
+        particle.at<double>(5,0) = newToolModel.randomNum(-0.21, -0.19);
     }
 
 };
@@ -413,22 +427,22 @@ void OptCalibration::boundaryCheck(cv::Mat &particle){
 void OptCalibration::computeSE3(const cv::Mat &vec_6_1, cv::Mat &outputGeometry){
 
     outputGeometry = cv::Mat::eye(4,4,CV_64FC1);
-    cv::Mat Rotation_CM0(3,3,CV_64FC1);
-    cv::Mat Rvec_CM0(3,1,CV_64FC1);
-    cv::Mat Tvec_CM0(3,1,CV_64FC1);
+    cv::Mat Rotation_CB(3,3,CV_64FC1);
+    cv::Mat Rvec_CB(3,1,CV_64FC1);
+    cv::Mat Tvec_CB(3,1,CV_64FC1);
 
-    Tvec_CM0.at<double>(0,0) = vec_6_1.at<double>(0,0);
-    Tvec_CM0.at<double>(1,0) = vec_6_1.at<double>(1,0);
-    Tvec_CM0.at<double>(2,0) = vec_6_1.at<double>(2,0);
+    Tvec_CB.at<double>(0,0) = vec_6_1.at<double>(0,0);
+    Tvec_CB.at<double>(1,0) = vec_6_1.at<double>(1,0);
+    Tvec_CB.at<double>(2,0) = vec_6_1.at<double>(2,0);
 
-    Rvec_CM0.at<double>(0,0) = vec_6_1.at<double>(3,0);
-    Rvec_CM0.at<double>(1,0) = vec_6_1.at<double>(4,0);
-    Rvec_CM0.at<double>(2,0) = vec_6_1.at<double>(5,0);
+    Rvec_CB.at<double>(0,0) = vec_6_1.at<double>(3,0);
+    Rvec_CB.at<double>(1,0) = vec_6_1.at<double>(4,0);
+    Rvec_CB.at<double>(2,0) = vec_6_1.at<double>(5,0);
 
-    cv::Rodrigues(Rvec_CM0, Rotation_CM0 );  //get rotation mat
+    cv::Rodrigues(Rvec_CB, Rotation_CB );  //get rotation mat
 
-    Rotation_CM0.copyTo(outputGeometry.colRange(0,3).rowRange(0,3));
-    Tvec_CM0.copyTo(outputGeometry.colRange(3,4).rowRange(0,3));
+    Rotation_CB.copyTo(outputGeometry.colRange(0,3).rowRange(0,3));
+    Tvec_CB.copyTo(outputGeometry.colRange(3,4).rowRange(0,3));
 
 };
 
@@ -441,14 +455,12 @@ cv::Mat OptCalibration::segmentation(cv::Mat &InputImg) {
     src = InputImg;
     cv::resize(src, src, cv::Size(), 1, 1);
 
-    double lowThresh = 43;
+    double lowThresh = 30;
     cv::cvtColor(src, src_gray, CV_BGR2GRAY);
     cv::blur(src_gray, src_gray, cv::Size(3, 3));
     cv::Canny(src_gray, grad, lowThresh, 4 * lowThresh, 3); //use Canny segmentation
 
     grad.convertTo(res, CV_32FC1);
-    cv::imshow("res",res);
-    cv::waitKey();
 
     return res;
 
