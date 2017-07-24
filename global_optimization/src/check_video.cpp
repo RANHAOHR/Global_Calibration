@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
     ROS_INFO_STREAM("rot_vec " << rot_vec);
 
     cv::Mat P = cam_mat.colRange(3, 4).rowRange(0, 3);
-    ROS_INFO_STREAM("P " << P);*/
+    ROS_INFO_STREAM("P " << P); */
 
 
     while (nodeHandle.ok()) {

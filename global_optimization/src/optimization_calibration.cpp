@@ -291,7 +291,7 @@ void OptCalibration::particleSwarmOptimization(const cv::Mat &g_CB_vec) {
         double dev_z = newToolModel.randomNumber(0.001, 0.0);
         double dev_roll = newToolModel.randomNumber(0.06, 0);
         double dev_pitch = newToolModel.randomNumber(0.06, 0);
-        double dev_yaw = newToolModel.randomNumber(0.06, 0); 
+        double dev_yaw = newToolModel.randomNumber(0.06, 0);
 
 //         dev_x = 0.0;
 //         dev_y = 0.0;

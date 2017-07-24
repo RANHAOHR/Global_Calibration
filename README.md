@@ -20,6 +20,14 @@ To check the tool geometry and virtual rendering performance, run:
 
 - Optimization package: 
 
+Before Run the optimization, get the data sets:
+
+- To get the pictures, run:
+'roslaunch global_optimization generate_datasets.launch'
+
+which generates the pictures for the left and right cameras and the "check_video.cpp" aims for making sure getting the right images
+
+
 To run the optimization algorithm:
 
 `rosrun global_optimization optimization_calibration_main`
