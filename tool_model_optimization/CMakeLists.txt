@@ -39,22 +39,22 @@ catkin_package(CATKIN_DEPENDS message_runtime std_msgs sensor_msgs cwru_opencv_c
 
 # Libraries: uncomment the following and edit arguments to create a new library
 # cs_add_library(my_lib src/my_lib.cpp)   
-cs_add_library(tool_model_lib src/tool_model.cpp)
+cs_add_library(tool_model src/tool_model.cpp)
 # Executables: uncomment the following and edit arguments to compile new nodes
 # may add more of these lines for more nodes from the same package
-cs_add_executable(tool_model_main src/tool_model_main.cpp)
+cs_add_executable(test_main src/tool_model_main.cpp)
 
 
 #the following is required, if desire to link a node in this package with a library created in this same package
 # edit the arguments to reference the named node and named library within this package
 # target_link_library(example my_lib)
 
-target_link_libraries(tool_model_lib
+target_link_libraries(tool_model
       ${OpenCV_LIBRARIES}
       ${catkin_LIBRARIES}
 )
 
-target_link_libraries(tool_model_main tool_model_lib ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} )
+target_link_libraries(test_main tool_model ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} )
 
 cs_install()
 cs_export()

@@ -1,7 +1,7 @@
 <launch>
 
    <!-- Load the video, put in a bag file -->
-   <arg name ="file_name" default="81_sample_pts.bag"/>
+   <arg name ="file_name" default="81_sample_pts_rect2.bag"/>
    <arg name ="dest_path" default="/home/ranhao/ros_ws/src"/>  
 
    <node name ="player" pkg="rosbag" type="play" output="screen" args="--clock $(arg dest_path)/$(arg file_name)"/>

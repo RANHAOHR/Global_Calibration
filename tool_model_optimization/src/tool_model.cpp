@@ -39,7 +39,7 @@
 #include <ros/ros.h>
 #include <boost/random.hpp>
 
-#include <tool_model_lib/tool_model.h>
+#include <tool_model/tool_model.h>
 
 
 using cv_projective::reprojectPoint;
@@ -57,7 +57,7 @@ ToolModel::ToolModel() {
 
     offset_body = 0.4560; //0.4560
     offset_ellipse = offset_body;
-    offset_gripper = offset_ellipse+ 0.007;
+    offset_gripper = offset_ellipse+ 0.005;
 
     /****initialize the vertices fo different part of tools****/
     tool_model_pkg = ros::package::getPath("tool_model_optimization");
@@ -744,7 +744,7 @@ void ToolModel::computeEllipsePose(toolModel &inputModel, const double &theta_el
 
     cv::Mat q_ellipse_(4, 1, CV_64FC1);
     q_ellipse_.at<double>(0, 0) = 0;
-    q_ellipse_.at<double>(1, 0) = 0.007;//0.011
+    q_ellipse_.at<double>(1, 0) = 0.01;//0.011
     q_ellipse_.at<double>(2, 0) = 0;
     q_ellipse_.at<double>(3, 0) = 1;
 
@@ -773,7 +773,7 @@ void ToolModel::computeEllipsePose(toolModel &inputModel, const double &theta_el
     /*********** computations for gripper kinematics **********/
     cv::Mat test_gripper(3, 1, CV_64FC1);
     test_gripper.at<double>(0, 0) = 0;
-    test_gripper.at<double>(1, 0) = 0.006;
+    test_gripper.at<double>(1, 0) = 0.0065;
     test_gripper.at<double>(2, 0) = 0;
 
     cv::Mat rot_elp(3, 3, CV_64FC1);

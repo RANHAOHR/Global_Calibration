@@ -49,7 +49,7 @@
 #include <string>
 #include <cstring>
 
-#include <tool_model_lib/tool_model.h>
+#include <tool_model/tool_model.h>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <sensor_msgs/image_encodings.h>

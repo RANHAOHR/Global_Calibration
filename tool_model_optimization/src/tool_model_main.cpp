@@ -11,7 +11,7 @@
 #include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.h>
 #include <cwru_opencv_common/projective_geometry.h>
-#include <tool_model_lib/tool_model.h>
+#include <tool_model/tool_model.h>
 #include "std_msgs/MultiArrayLayout.h"
 #include "std_msgs/Float64MultiArray.h"
 

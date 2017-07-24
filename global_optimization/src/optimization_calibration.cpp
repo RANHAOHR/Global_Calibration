@@ -47,11 +47,11 @@ OptCalibration::OptCalibration(ros::NodeHandle *nodehandle):
     g_cr_cl = cv::Mat::eye(4, 4, CV_64FC1);
 
     cv::Mat rot(3, 3, CV_64FC1);
-    cv::Mat rot_vec = (cv::Mat_<double>(3, 1) << -0.01, -0.008, 0.024); //-0.01163, -0.024, 0.00142
+    cv::Mat rot_vec = (cv::Mat_<double>(3, 1) << 0.0001, -0.014, 0.001); //-0.01163, -0.024, 0.00142
     cv::Rodrigues(rot_vec, rot);
     rot.copyTo(g_cr_cl.colRange(0, 3).rowRange(0, 3));
 
-    cv::Mat p = (cv::Mat_<double>(3, 1) << -0.015, 0.0, 0.00); //-0.011, 0.0, 0.00
+    cv::Mat p = (cv::Mat_<double>(3, 1) << 0.00, 0.0, 0.00); //-0.011, 0.0, 0.00
     p.copyTo(g_cr_cl.colRange(3, 4).rowRange(0, 3));
 
 	toolImage_left_arm_1 = cv::Mat::zeros(480, 640, CV_8UC3);
@@ -82,11 +82,15 @@ OptCalibration::~OptCalibration() {
 
 void OptCalibration::optimizationMain(){
 
+    /**
+     * some seeds
+     */
     /* -0.12033, -0.04072, 0.01142, 1.02296677, 2.6807519, -0.110696 */
-    /* -0.12033, -0.04072, 0.02042, 1.02296677, 2.6807519, -0.110696 */
-    /* -0.127242, -0.04223243868011364, 0.02144292022445054, 1.022493674490063, 2.679760657738501, -0.109826486525038 */
 
-    cv::Mat Cam_left_vec = (cv::Mat_<double>(6,1) << -0.1286624619928083, -0.04274536819101153, 0.0257695191703324, 1.02223431858501, 2.681807130327333, -0.1112189970810531);
+    /* a good one -0.1323721770297023, -0.04422677198941558, 0.03406154062716493, 1.022201380206081, 2.68169164210085, -0.1114269407055882 */
+    /*  -0.1250031605411461, -0.04204599753469897, 0.03483726433430928, 1.022409365324091, 2.681838053389427, -0.1108738898970002 */
+
+    cv::Mat Cam_left_vec = (cv::Mat_<double>(6,1) << -0.1204197326593225, -0.04732758639716859, 0.006989468645178636, 1.019769804978566, 2.684007868323812, -0.1182703912096432);
 
     particleSwarmOptimization(Cam_left_vec);
 
@@ -248,7 +252,7 @@ double OptCalibration::measureFuncSameCam(cv::Mat & toolImage_left, cv::Mat & to
 
 void OptCalibration::particleSwarmOptimization(const cv::Mat &g_CB_vec) {
 
-    int Num = 1000;  //number of particles 40000
+    int Num = 1500;  //number of particles 40000
     double c1 = 2; //flying weights according to the local best
     double c2 = 2; //flying weights according to the global best
     int MaxIter = 10;  //max iteration
@@ -281,12 +285,16 @@ void OptCalibration::particleSwarmOptimization(const cv::Mat &g_CB_vec) {
     for (int i = 0; i < Num; i++) {
 
         //give random velocity
+        if(i % 500 == 0){
+            ROS_INFO_STREAM(" i = " << i);
+        }
+
         double dev_x = newToolModel.randomNumber(0.01, 0.0);
         double dev_y = newToolModel.randomNumber(0.01, 0.0);
         double dev_z = newToolModel.randomNumber(0.01, 0.0);
-        double dev_roll = newToolModel.randomNumber(0.001, 0); //
-        double dev_pitch = newToolModel.randomNumber(0.001, 0); //
-        double dev_yaw = newToolModel.randomNumber(0.001, 0); //
+        double dev_roll = newToolModel.randomNumber(0.002, 0); //
+        double dev_pitch = newToolModel.randomNumber(0.002, 0); //
+        double dev_yaw = newToolModel.randomNumber(0.002, 0); //
 
 //        double dev_x = 0.0;
 //        double dev_y = 0.0;
@@ -338,16 +346,19 @@ void OptCalibration::particleSwarmOptimization(const cv::Mat &g_CB_vec) {
 
         double dev_x = newToolModel.randomNumber(0.005, 0.0);
         double dev_y = newToolModel.randomNumber(0.005, 0.0);
-        double dev_z = newToolModel.randomNumber(0.002, 0.0);
-        double dev_roll = newToolModel.randomNumber(0.001, 0.0); //
-        double dev_pitch = newToolModel.randomNumber(0.001, 0.0); //
-        double dev_yaw = newToolModel.randomNumber(0.001, 0.0); //
+        double dev_z = newToolModel.randomNumber(0.005, 0.0);
+        double dev_roll = newToolModel.randomNumber(0.0002, 0.0); //
+        double dev_pitch = newToolModel.randomNumber(0.0002, 0.0); //
+        double dev_yaw = newToolModel.randomNumber(0.0002, 0.0); //
 
 
         for (int n = 0; n < Num; n++) {
 
             if(n % 500 == 0){
                 ROS_INFO_STREAM(" n = " << n);
+
+                ROS_INFO_STREAM(" final_G_CB = " << final_G_CB);
+                ROS_INFO_STREAM("global best vec: " << global_best);
             }
 
             //update have to use different metric
@@ -455,7 +466,7 @@ cv::Mat OptCalibration::segmentation(cv::Mat &InputImg) {
     src = InputImg;
     cv::resize(src, src, cv::Size(), 1, 1);
 
-    double lowThresh = 30;
+    double lowThresh = 24;
     cv::cvtColor(src, src_gray, CV_BGR2GRAY);
     cv::blur(src_gray, src_gray, cv::Size(3, 3));
     cv::Canny(src_gray, grad, lowThresh, 4 * lowThresh, 3); //use Canny segmentation
