@@ -51,13 +51,10 @@ boost::mt19937 rng((const uint32_t &) time(0));
 ToolModel::ToolModel() {
 
     ///adjust the model params according to the tool geometry
-     offset_body = 0.4530; //0.4560
-     offset_ellipse = offset_body;
-     offset_gripper = offset_ellipse+ 0.007;
 
     offset_body = 0.4560; //0.4560
     offset_ellipse = offset_body;
-    offset_gripper = offset_ellipse+ 0.005;
+    offset_gripper = offset_ellipse+ 0.007;
 
     /****initialize the vertices fo different part of tools****/
     tool_model_pkg = ros::package::getPath("tool_model_optimization");
@@ -773,7 +770,7 @@ void ToolModel::computeEllipsePose(toolModel &inputModel, const double &theta_el
     /*********** computations for gripper kinematics **********/
     cv::Mat test_gripper(3, 1, CV_64FC1);
     test_gripper.at<double>(0, 0) = 0;
-    test_gripper.at<double>(1, 0) = 0.0065;
+    test_gripper.at<double>(1, 0) = 0.009;
     test_gripper.at<double>(2, 0) = 0;
 
     cv::Mat rot_elp(3, 3, CV_64FC1);
@@ -921,7 +918,7 @@ float ToolModel::calculateChamferScore(cv::Mat &toolImage, const cv::Mat &segmen
     cv::Mat BinaryImg(toolImFloat.size(), toolImFloat.type());
     BinaryImg = toolImFloat * (1.0/255);
 
-    if(countNonZero(BinaryImg) < 1){
+    if(countNonZero(BinaryImg) < 100){
         output = 1000;
     }else{
         /***segmented image process**/
