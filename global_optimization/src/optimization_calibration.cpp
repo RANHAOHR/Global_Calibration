@@ -87,7 +87,9 @@ void OptCalibration::optimizationMain(){
      */
     /* -0.14643016064445, -0.05682715421036513, 0.018036308562240, 0.9376132688181528, 2.841738662007055, -0.1992759086311982 */
     /* -0.1573825011333455, -0.062592196488725, 0.02830238685851418, 0.92371292898318, 2.816467943665938, -0.2305205298700717 */
-    cv::Mat Cam_left_vec = (cv::Mat_<double>(6,1) << -0.1463825011333455, -0.062592196488725, 0.02030238685851418, 0.92371292898318, 2.816467943665938, -0.2305205298700717);
+
+    /* a good one -0.1468711888945467, -0.05000594917652904, 0.01870526756691652, 1.006991441692619, 2.758528500676225, -0.1812563712077466 */
+    cv::Mat Cam_left_vec = (cv::Mat_<double>(6,1) << -0.1468711888945467, -0.05700594917652904, 0.0180526756691652, 1.006991441692619, 2.758528500676225, -0.1812563712077466);
 
     particleSwarmOptimization(Cam_left_vec);
 
@@ -249,7 +251,7 @@ double OptCalibration::measureFuncSameCam(cv::Mat & toolImage_left, cv::Mat & to
 
 void OptCalibration::particleSwarmOptimization(const cv::Mat &g_CB_vec) {
 
-    int Num = 4000;  //number of particles 40000
+    int Num = 600;  //number of particles 40000
     double c1 = 2; //flying weights according to the local best
     double c2 = 2; //flying weights according to the global best
     int MaxIter = 10;  //max iteration
@@ -286,12 +288,12 @@ void OptCalibration::particleSwarmOptimization(const cv::Mat &g_CB_vec) {
             ROS_INFO_STREAM(" i = " << i);
         }
 
-        double dev_x = newToolModel.randomNumber(0.0005, 0.0);
-        double dev_y = newToolModel.randomNumber(0.01, 0.0);
+        double dev_x = newToolModel.randomNumber(0.001, 0.0);
+        double dev_y = newToolModel.randomNumber(0.001, 0.0);
         double dev_z = newToolModel.randomNumber(0.001, 0.0);
-        double dev_roll = newToolModel.randomNumber(0.06, 0);
-        double dev_pitch = newToolModel.randomNumber(0.06, 0);
-        double dev_yaw = newToolModel.randomNumber(0.06, 0);
+        double dev_roll = newToolModel.randomNumber(0.0002, 0);
+        double dev_pitch = newToolModel.randomNumber(0.0002, 0);
+        double dev_yaw = newToolModel.randomNumber(0.0002, 0);
 
 //         dev_x = 0.0;
 //         dev_y = 0.0;
@@ -341,12 +343,12 @@ void OptCalibration::particleSwarmOptimization(const cv::Mat &g_CB_vec) {
     ROS_WARN(" -START ITERATION- ");
     for (int iter = 0; iter < MaxIter; iter++) {
 
-        double dev_x = newToolModel.randomNumber(0.0001, 0.0);
-        double dev_y = newToolModel.randomNumber(0.0005, 0.0);
-        double dev_z = newToolModel.randomNumber(0.0001, 0.0);
-        double dev_roll = newToolModel.randomNumber(0.001, 0.0); //
-        double dev_pitch = newToolModel.randomNumber(0.001, 0.0); //
-        double dev_yaw = newToolModel.randomNumber(0.001, 0.0); //
+        double dev_x = newToolModel.randomNumber(0.0003, 0.0);
+        double dev_y = newToolModel.randomNumber(0.0003, 0.0);
+        double dev_z = newToolModel.randomNumber(0.0003, 0.0);
+        double dev_roll = newToolModel.randomNumber(0.0001, 0.0); //
+        double dev_pitch = newToolModel.randomNumber(0.0001, 0.0); //
+        double dev_yaw = newToolModel.randomNumber(0.0001, 0.0); //
 
         for (int n = 0; n < Num; n++) {
 
@@ -368,13 +370,10 @@ void OptCalibration::particleSwarmOptimization(const cv::Mat &g_CB_vec) {
 
             particles[n] = particles[n] + velocities[n];
 
-            ///need to do boundary check
+            ///if need to do boundary check
             //boundaryCheck(particles[n]);
 
             temp_errorValue = computeError(particles[n]);  // the temp error for n-th new G_CM0
-
-            //ROS_INFO_STREAM("local_errorG_CM0 " << local_errorG_CM0[n]);
-            // ROS_INFO_STREAM("temp_errorValue " << temp_errorValue);
 
             if (local_errorG_CB[n] > temp_errorValue) { /// update local best if new error is smaller
 
