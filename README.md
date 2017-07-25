@@ -22,7 +22,7 @@ To check the tool geometry and virtual rendering performance, run:
 
 Before Run the optimization, get the data sets:
 
-- To get the pictures, run:
+To get the pictures, run:
 
 `roslaunch global_optimization generate_datasets.launch`
 
