@@ -41,7 +41,7 @@
 using namespace std;
 
 OptCalibration::OptCalibration(ros::NodeHandle *nodehandle):
-        node_handle(*nodehandle), L(13), nData(70)
+        node_handle(*nodehandle), L(6), nData(70)
 {
     /********** using calibration results: camera-base transformation *******/
     g_cr_cl = cv::Mat::eye(4, 4, CV_64FC1);
@@ -67,8 +67,6 @@ OptCalibration::OptCalibration(ros::NodeHandle *nodehandle):
     P_right = (cv::Mat_<double>(3, 4) << 893.78525, 0, 288.4443, 4.73295,
             0, 893.78525, 259.7727, 0,
             0, 0, 1, 0);
-
-	freshCameraInfo = false;
 
     kinematics = Davinci_fwd_solver();
 
@@ -259,7 +257,7 @@ void OptCalibration::particleSwarmOptimization(const cv::Mat &g_CB_vec) {
     double w = 0.75;  //speed weight
 
     //initialization
-    cv::Mat vec_CB(6, 1, CV_64FC1);  ///a new vec for representing G_CB
+    cv::Mat vec_CB(L, 1, CV_64FC1);  ///a new vec for representing G_CB
     vec_CB = g_CB_vec.clone();
     ROS_INFO_STREAM("vec_CB " << vec_CB);
 
@@ -274,8 +272,8 @@ void OptCalibration::particleSwarmOptimization(const cv::Mat &g_CB_vec) {
     velocities.resize(Num);
     local_errorG_CB.resize(Num);
 
-    cv::Mat temp_vel(6, 1, CV_64FC1);  ///a new vec for representing G_CB
-    cv::Mat temp_particle(6, 1, CV_64FC1);  ///a new vec for representing G_CB
+    cv::Mat temp_vel(L, 1, CV_64FC1);  ///a new vec for representing G_CB
+    cv::Mat temp_particle(L, 1, CV_64FC1);  ///a new vec for representing G_CB
 
     double temp_errorValue;
 
@@ -328,7 +326,7 @@ void OptCalibration::particleSwarmOptimization(const cv::Mat &g_CB_vec) {
     }
     ROS_WARN(" -FINISHED Initialization- ");
     ///initialize global best
-    cv::Mat global_best(6, 1, CV_64FC1);
+    cv::Mat global_best(L, 1, CV_64FC1);
     global_best = particles[0].clone();
 
     double best_value = computeError(global_best);

@@ -75,51 +75,66 @@ private:
 
 	ros::NodeHandle node_handle;
 
+/**
+ * @brief The ToolModel Object
+ */
 	ToolModel newToolModel;
-	/**
-	 * @brief predicted_real_pose is used to get the predicted real tool pose from using the forward kinematics
-	 */
+
+/**
+ * @brief predicted_real_pose is used to get the predicted real tool pose from using the forward kinematics
+ */
     std::vector<ToolModel::toolModel> tool_poses;
 
-    /**
-     * @brief for comparing and testing
-     */
-    std::vector<cv::Mat> left_raw_images; //left rendered Image
-    std::vector<cv::Mat> right_raw_images; //right rendered Image
+/**
+ * @brief Left and right rendered images for comparing and testing
+ */
+    std::vector<cv::Mat> left_raw_images; 
+    std::vector<cv::Mat> right_raw_images; 
 
+/**
+ * @brief Left and right segemented images
+ */
 	std::vector<cv::Mat> segmented_left;
 	std::vector<cv::Mat> segmented_right;
 
-	cv::Mat toolImage_left_arm_1; //left rendered Image for ARM 1
-	cv::Mat toolImage_right_arm_1; //right rendered Image for ARM 1
+/**
+ * @brief Left and right rendered Image for ARM 1
+ */
+	cv::Mat toolImage_left_arm_1;
+	cv::Mat toolImage_right_arm_1; 
 
-	std::vector<double> matchingScores; // particle scores (matching scores)
-
+/**
+ * The joint angle vectors contains the 7 joint sensor for all poses
+ */
     std::vector<std::vector<double> > joint_sensor;
 
+/**
+ * The fwd kinematics object
+ */
     Davinci_fwd_solver kinematics;
 
+/**
+ * The offset bewteen the left and right camera, is used to compute the right one using the left
+ */
     cv::Mat g_cr_cl;
 
-	bool freshCameraInfo;
-
-	/**
-	 * L is the dimension of the state vector
-	 */
+/**
+ * L is the dimension of the state vector
+ */
 	int L;
 
-    /**
-     * Number of pictures from data set
-     */
+/**
+ * Number of pictures from data set
+ */
      int nData;
-
-public:
 
 /**
  * Projection matrices
  */
 	cv::Mat P_left;
 	cv::Mat P_right;
+
+public:
 
 /**
 * @brief The default constructor
@@ -161,15 +176,40 @@ public:
 	double measureFuncSameCam(cv::Mat & toolImage_left, cv::Mat & toolImage_right, ToolModel::toolModel &toolPose,
 							  const cv::Mat &segmented_left, const cv::Mat &segmented_right, cv::Mat &Cam_left, cv::Mat &Cam_right);
 
+/**
+ * @brief Main optimization function
+ * @param g_CB_vec : the seed 6x1D vector of the camera matrix 
+ */
 	void particleSwarmOptimization(const cv::Mat &g_CB_vec);
+
+/**
+ * @brief a boundtry check if necessary
+ * @param particle : the particle vector of each camera matrix 
+ */
 	void boundaryCheck(cv::Mat &particle);
 
+/**
+ * @brief Given a state vector, output a SE(3) matrix represent the transformation
+ * @param vec_6_1
+ * @param outputGeometry : a SE(3) matrix
+ */
 	void computeSE3(const cv::Mat &vec_6_1, cv::Mat &outputGeometry);
 
+/**
+ * @brief The segmentation function using Canny
+ */
     cv::Mat segmentation(cv::Mat &InputImg);
 
+/**
+ * @brief Convert joint sensor vector to tool_model vector
+ */
     void convertJointToPose();
 
+/**
+ * @brief Given a Eigen::Affine3d as a transformation matrix, extract the rotation as Rodrigues vector 
+ * @param trans : input transformation with Eigen::Affine3d form
+ * @param rot_vec : output Rodrigues vector
+ */
     void computeRodriguesVec(const Eigen::Affine3d &trans, cv::Mat &rot_vec);
 };
 

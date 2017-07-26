@@ -12,6 +12,7 @@ int main(int argc, char **argv) {
 	ros::init(argc, argv, "tracking_node");
 
 	ros::NodeHandle nh;
+	
 	/******  initialization  ******/
 	OptCalibration OptCalibration(&nh);
 
@@ -21,7 +22,6 @@ int main(int argc, char **argv) {
 
 	while (nh.ok()) {
 		ros::spinOnce();
-		/*** make sure camera information is ready ***/
 
         OptCalibration.optimizationMain(); //with rendered tool and segmented img
 
