@@ -41,7 +41,7 @@ add_executable(check_video src/check_video.cpp)
 #the following is required, if desire to link a node in this package with a library created in this same package
 # edit the arguments to reference the named node and named library within this package
 # target_link_library(example my_lib)
-target_link_libraries(optimization_calibration tool_model_lib davinci_kinematics )
+target_link_libraries(optimization_calibration tool_model davinci_kinematics )
 target_link_libraries(optimization_calibration_main optimization_calibration ${catkin_LIBRARIES} )
 target_link_libraries(generate_dataset optimization_calibration ${catkin_LIBRARIES} )
 target_link_libraries(check_video optimization_calibration ${catkin_LIBRARIES} )
