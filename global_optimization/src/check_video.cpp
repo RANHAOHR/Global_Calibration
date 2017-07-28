@@ -43,21 +43,6 @@ int main(int argc, char **argv) {
 
     ROS_INFO("---- done subscribe -----");
 
-/*    cv::Mat cam_mat = (cv::Mat_<double>(4,4) << -0.795366110925932, 0.598910033205905, 0.09327122662354001, -0.14643016064445,
-    0.5800314064129208, 0.7967225045097124, -0.1696962532951757, -0.05682715421036513,
-    -0.1759440739701311, -0.0808704082657756, -0.9810727087742884, 0.0180363085622405,
-    0, 0, 0, 1);
-
-    cv::Mat rot(3, 3, CV_64FC1);
-    rot = cam_mat.colRange(0, 3).rowRange(0, 3);
-    cv::Mat rot_vec(3,1,CV_64FC1);
-    cv::Rodrigues(rot, rot_vec);
-    ROS_INFO_STREAM("rot_vec " << rot_vec);
-
-    cv::Mat P = cam_mat.colRange(3, 4).rowRange(0, 3);
-    ROS_INFO_STREAM("P " << P); */
-
-
     while (nodeHandle.ok()) {
         ros::spinOnce();
 

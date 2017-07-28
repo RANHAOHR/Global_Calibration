@@ -65,7 +65,6 @@
 #include <cwru_davinci_kinematics/davinci_kinematics.h>
 
 #include <xform_utils/xform_utils.h>
-#include <geometry_msgs/Pose.h>
 #include <iostream>
 #include <fstream>
 
@@ -75,42 +74,56 @@ private:
 
 	ros::NodeHandle node_handle;
 
+/**
+ * @brief The ToolModel Object
+ */
 	ToolModel newToolModel;
-	/**
-	 * @brief predicted_real_pose is used to get the predicted real tool pose from using the forward kinematics
-	 */
+/**
+ * @brief predicted_real_pose is used to get the predicted real tool pose from using the forward kinematics
+ */
     std::vector<ToolModel::toolModel> tool_poses;
 
-    /**
-     * @brief for comparing and testing
-     */
-    std::vector<cv::Mat> left_raw_images; //left rendered Image
-    std::vector<cv::Mat> right_raw_images; //right rendered Image
+/**
+ * @brief Left and right rendered images for comparing and testing
+ */
+    std::vector<cv::Mat> left_raw_images;
+    std::vector<cv::Mat> right_raw_images;
 
-	std::vector<cv::Mat> segmented_left;
-	std::vector<cv::Mat> segmented_right;
+/**
+ * @brief Left and right segemented images
+ */
+    std::vector<cv::Mat> segmented_left;
+    std::vector<cv::Mat> segmented_right;
 
-	cv::Mat toolImage_left_arm_1; //left rendered Image for ARM 1
-	cv::Mat toolImage_right_arm_1; //right rendered Image for ARM 1
+/**
+ * @brief Left and right rendered Image for ARM 1
+ */
+    cv::Mat toolImage_left_arm_1;
+    cv::Mat toolImage_right_arm_1;
 
-	std::vector<double> matchingScores; // particle scores (matching scores)
-
+/**
+ * The joint angle vectors contains the 7 joint sensor for all poses
+ */
     std::vector<std::vector<double> > joint_sensor;
 
+/**
+ * The fwd kinematics object
+ */
     Davinci_fwd_solver kinematics;
 
+/**
+ * The offset bewteen the left and right camera, is used to compute the right one using the left
+ */
     cv::Mat g_cr_cl;
 
-	bool freshCameraInfo;
-
-	/**
-	 * L is the dimension of the state vector
-	 */
+/**
+ * L is the dimension of the state vector, camera vector plus joint angles
+ */
 	int L;
 
-    /**
-     * Number of pictures from data set
-     */
+/**
+ * Number of pictures from data set
+ */
      int nData;
 
 public:
@@ -145,10 +158,17 @@ public:
  * @param cam_matrices_left
  * @return a total error computed using the data set and input camera-robot base transformation
  */
-    double computeError(cv::Mat & cam_vector_left);
+    double computeError(cv::Mat & state_vec);
 
 /**
- * @brief get the p(z_t|x_t), compute the matching score based on the camera view image and rendered image
+ * @brief Given a noise vector from each particle, compute the first 3 noised joint angles
+ * @param input_noise_vec
+ * @param outputJoints
+ */
+    void getNoisedJointAngles(cv::Mat &input_noise_vec, std::vector<std::vector<double> > &outputJoints);
+
+/**
+ * @brief Compute the error from the matching score based on the camera view image and rendered image
  * @param toolImage_left
  * @param toolImage_right
  * @param toolPose
@@ -161,15 +181,43 @@ public:
 	double measureFuncSameCam(cv::Mat & toolImage_left, cv::Mat & toolImage_right, ToolModel::toolModel &toolPose,
 							  const cv::Mat &segmented_left, const cv::Mat &segmented_right, cv::Mat &Cam_left, cv::Mat &Cam_right);
 
-	void particleSwarmOptimization(const cv::Mat &g_CB_vec);
+/**
+ * @brief Main optimization function
+ * @param state_vec : the seed 9x1D vector contains the camera vector and 3 joint angles
+ */
+	void particleSwarmOptimization(const cv::Mat &state_vec);
+
+/**
+ * @brief a boundry check if necessary
+ * @param particle : the particle vector of each camera matrix
+ */
 	void boundaryCheck(cv::Mat &particle);
 
+/**
+ * @brief Given a state vector, output a SE(3) matrix represent the transformation
+ * @param vec_6_1
+ * @param outputGeometry
+ */
 	void computeSE3(const cv::Mat &vec_6_1, cv::Mat &outputGeometry);
 
+/**
+ * @brief The segmentation function using Canny
+ * @param InputImg
+ * @return segmented image
+ */
     cv::Mat segmentation(cv::Mat &InputImg);
 
-    void convertJointToPose();
+/**
+ * @brief Convert a joint sensor vector to tool_model vector
+ * @param inputJoints
+ */
+    void convertJointToPose(std::vector<std::vector<double> > &inputJoints);
 
+/**
+ * @brief Given a Eigen::Affine3d as a transformation matrix, extract the rotation as Rodrigues vector
+ * @param trans : input transformation with Eigen::Affine3d form
+ * @param rot_vec : output Rodrigues vector
+ */
     void computeRodriguesVec(const Eigen::Affine3d &trans, cv::Mat &rot_vec);
 };
 

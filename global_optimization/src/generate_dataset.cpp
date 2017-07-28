@@ -32,18 +32,6 @@ void newImageCallback(const sensor_msgs::ImageConstPtr &msg, cv::Mat *outputImag
 
 }
 
-/**
- * To let callback happen at certain rate, but seems not very helpful just leave it
- */
-//void timerCallback(const ros::TimerEvent&)
-//{
-//    /*** if camera is ready, show the image ***/
-//    if (freshImage) {
-//
-//    }
-//
-//}
-
 int main(int argc, char **argv) {
 
     ros::init(argc, argv, "generate_datasets");
@@ -60,8 +48,6 @@ int main(int argc, char **argv) {
             "/davinci_endo/right/image_rect", 1, boost::function<void(const sensor_msgs::ImageConstPtr &)>(boost::bind(newImageCallback, _1, &rawImage_right)));
 
     ROS_INFO("---- done subscribe -----");
-
-    //ros::Timer timer = nodeHandle.createTimer(ros::Duration(0.01), timerCallback);
 
     int count = 0;
     std::string data_pkg = ros::package::getPath("global_optimization");

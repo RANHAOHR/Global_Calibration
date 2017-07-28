@@ -10,6 +10,7 @@ find_package(OpenCV REQUIRED)
 #               std_msgs
 #               sensor_msgs
 #               cwru_opencv_common
+#				roscpp
 #               )
 
 #uncomment the next line to use the point-cloud library
@@ -26,7 +27,7 @@ catkin_simple()
 include_directories(include ${catkin_INCLUDE_DIRS})
 include_directories(SYSTEM ${OpenCV_INCLUDE_DIRS})
 
-catkin_package(CATKIN_DEPENDS message_runtime std_msgs sensor_msgs cwru_opencv_common)
+catkin_package(CATKIN_DEPENDS roscpp message_runtime std_msgs sensor_msgs cwru_opencv_common)
 
 # example boost usage
 # find_package(Boost REQUIRED COMPONENTS system thread)
@@ -43,7 +44,6 @@ cs_add_library(tool_model src/tool_model.cpp)
 # Executables: uncomment the following and edit arguments to compile new nodes
 # may add more of these lines for more nodes from the same package
 cs_add_executable(test_main src/tool_model_main.cpp)
-
 
 #the following is required, if desire to link a node in this package with a library created in this same package
 # edit the arguments to reference the named node and named library within this package

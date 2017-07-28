@@ -12,5 +12,4 @@
    <!-- Generate data sets node -->
    <node name="check_video" pkg="global_optimization" type="check_video" respawn="false" output="screen" />
 
-
 </launch>

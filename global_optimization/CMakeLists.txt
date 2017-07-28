@@ -5,19 +5,17 @@ project(global_optimization)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 
-find_package(catkin REQUIRED COMPONENTS message_generation std_msgs geometry_msgs sensor_msgs xform_utils cwru_opencv_common tool_model_optimization cwru_davinci_interface cwru_davinci_kinematics )
+find_package(catkin REQUIRED COMPONENTS roscpp message_generation std_msgs geometry_msgs sensor_msgs xform_utils cwru_opencv_common tool_model_optimization cwru_davinci_interface cwru_davinci_kinematics )
 
 find_package(OpenCV REQUIRED)
-
-#include_directories(include ${catkin_INCLUDE_DIRS} ${tool_model_INCLUDE_DIRS})
-include_directories(SYSTEM ${OpenCV_INCLUDE_DIRS})
 
 include_directories(
         include
         ${catkin_INCLUDE_DIRS}
 )
+include_directories(SYSTEM ${OpenCV_INCLUDE_DIRS})
 
-catkin_package(CATKIN_DEPENDS message_runtime std_msgs sensor_msgs geometry_msgs xform_utils cwru_opencv_common tool_model_optimization cwru_davinci_interface cwru_davinci_kinematics)
+catkin_package(CATKIN_DEPENDS roscpp message_runtime std_msgs sensor_msgs geometry_msgs xform_utils cwru_opencv_common tool_model_optimization cwru_davinci_interface cwru_davinci_kinematics)
 # example boost usage
 # find_package(Boost REQUIRED COMPONENTS system thread)
 
