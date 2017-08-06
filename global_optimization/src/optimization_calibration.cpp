@@ -88,7 +88,8 @@ void OptCalibration::optimizationMain(){
 
     /* a good one -0.1468711888945467, -0.05000594917652904, 0.01870526756691652, 1.006991441692619, 2.758528500676225, -0.1812563712077466 */
     /* a good one -0.1464792194963849, -0.04897846826936547, 0.01796164720820059, 1.006875736072832, 2.757973804101557, -0.1812948125567952 */
-    cv::Mat Cam_left_vec = (cv::Mat_<double>(6,1) << -0.142606765370334, -0.04837197008497222, 0.0133186983763136, 1.006896511217604, 2.757040952370038, -0.1818372562586458);
+    /* -0.1483084923396818, -0.0505758204867670, 0.01923145282820999, 1.006502013605448, 2.75905915039897, -0.1812421442485061 */
+    cv::Mat Cam_left_vec = (cv::Mat_<double>(6,1) << -0.1408282001287118, -0.0477493338245277, 0.02001916427100351, 1.006568105666505, 2.759748874667454, -0.1812020641674647);
 
     particleSwarmOptimization(Cam_left_vec);
 
@@ -250,7 +251,7 @@ double OptCalibration::measureFuncSameCam(cv::Mat & toolImage_left, cv::Mat & to
 
 void OptCalibration::particleSwarmOptimization(const cv::Mat &g_CB_vec) {
 
-    int Num = 600;  //number of particles 40000
+    int Num = 3000;  //number of particles 40000
     double c1 = 2; //flying weights according to the local best
     double c2 = 2; //flying weights according to the global best
     int MaxIter = 10;  //max iteration
@@ -289,11 +290,14 @@ void OptCalibration::particleSwarmOptimization(const cv::Mat &g_CB_vec) {
 
         double dev_x = newToolModel.randomNumber(0.001, 0.0);
         double dev_y = newToolModel.randomNumber(0.001, 0.0);
-        double dev_z = newToolModel.randomNumber(0.0001, 0.0);
+        double dev_z = newToolModel.randomNumber(0.0002, 0.0);
         double dev_roll = newToolModel.randomNumber(0.0002, 0);
         double dev_pitch = newToolModel.randomNumber(0.0002, 0);
         double dev_yaw = newToolModel.randomNumber(0.0002, 0);
 
+        /**
+         * This is to show testing results without noises
+         */
          dev_x = 0.0;
          dev_y = 0.0;
          dev_z = 0.0;
@@ -342,8 +346,8 @@ void OptCalibration::particleSwarmOptimization(const cv::Mat &g_CB_vec) {
     ROS_WARN(" -START ITERATION- ");
     for (int iter = 0; iter < MaxIter; iter++) {
 
-        double dev_x = newToolModel.randomNumber(0.0004, 0.0);
-        double dev_y = newToolModel.randomNumber(0.0004, 0.0);
+        double dev_x = newToolModel.randomNumber(0.0001, 0.0);
+        double dev_y = newToolModel.randomNumber(0.0001, 0.0);
         double dev_z = newToolModel.randomNumber(0.00001, 0.0);
         double dev_roll = newToolModel.randomNumber(0.0001, 0.0); //
         double dev_pitch = newToolModel.randomNumber(0.0001, 0.0); //
