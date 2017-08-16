@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
 
     char index[16];
 
-    ros::Duration(14).sleep(); //starting wait until first pose pop
+    ros::Duration(10).sleep(); //starting wait until first pose pop
 
     while (nodeHandle.ok()) {
         ros::spinOnce();

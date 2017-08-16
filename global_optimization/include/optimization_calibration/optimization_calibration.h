@@ -211,6 +211,12 @@ public:
  * @param rot_vec : output Rodrigues vector
  */
     void computeRodriguesVec(const Eigen::Affine3d &trans, cv::Mat &rot_vec);
+
+	/**
+	 * @brief Debug function
+	 * @param input_g_CB_vec
+	 */
+	void debugOptimization(const cv::Mat &input_g_CB_vec);
 };
 
 #endif

@@ -9,7 +9,7 @@ using namespace cv_projective;
 
 int main(int argc, char **argv) {
 
-	ros::init(argc, argv, "tracking_node");
+	ros::init(argc, argv, "optimization_node");
 
 	ros::NodeHandle nh;
 	

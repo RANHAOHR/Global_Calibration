@@ -41,7 +41,7 @@
 using namespace std;
 
 OptCalibration::OptCalibration(ros::NodeHandle *nodehandle):
-        node_handle(*nodehandle), L(6), nData(70)
+        node_handle(*nodehandle), L(6), nData(75)
 {
     /********** using calibration results: camera-base transformation *******/
     g_cr_cl = cv::Mat::eye(4, 4, CV_64FC1);
@@ -89,7 +89,13 @@ void OptCalibration::optimizationMain(){
     /* a good one -0.1468711888945467, -0.05000594917652904, 0.01870526756691652, 1.006991441692619, 2.758528500676225, -0.1812563712077466 */
     /* a good one -0.1464792194963849, -0.04897846826936547, 0.01796164720820059, 1.006875736072832, 2.757973804101557, -0.1812948125567952 */
     /* -0.1483084923396818, -0.0505758204867670, 0.01923145282820999, 1.006502013605448, 2.75905915039897, -0.1812421442485061 */
-    cv::Mat Cam_left_vec = (cv::Mat_<double>(6,1) << -0.1408282001287118, -0.0477493338245277, 0.02001916427100351, 1.006568105666505, 2.759748874667454, -0.1812020641674647);
+    /* -0.1458969120429149, -0.05649933924315715, 0.02165704280867613, 0.9350228785206781, 2.84484629578232, -0.1992041198977952 */
+    cv::Mat Cam_left_vec = (cv::Mat_<double>(6,1) <<-0.1458969120429149, -0.05649933924315715, 0.02165704280867613, 0.9350228785206781, 2.84484629578232, -0.1992041198977952);
+
+    /**
+     * Debug function
+     */
+//    debugOptimization(Cam_left_vec);
 
     particleSwarmOptimization(Cam_left_vec);
 
@@ -212,19 +218,6 @@ double OptCalibration::computeError(cv::Mat & cam_vector_left)
         matchingerror = measureFuncSameCam(toolImage_left_arm_1, toolImage_right_arm_1, tool_poses[i], segmented_left[i], segmented_right[i], cam_matrices_left, cam_matrices_right);
         totalScore += matchingerror;
 
-        /** debug */
-        cv::Mat test_seg_l = segmented_left[i].clone();
-        cv::Mat test_seg_r = segmented_right[i].clone();
-
-        newToolModel.renderTool(test_seg_l, tool_poses[i], cam_matrices_left, P_left);
-        newToolModel.renderTool(test_seg_r, tool_poses[i], cam_matrices_right, P_right);
-
-        cv::imshow("debug left ", test_seg_l );
-        cv::imshow("debug right ", test_seg_r );
-
-        ROS_INFO_STREAM("matchingerror " << matchingerror);
-
-        cv::waitKey();
     }
 
     return  totalScore;
@@ -251,7 +244,7 @@ double OptCalibration::measureFuncSameCam(cv::Mat & toolImage_left, cv::Mat & to
 
 void OptCalibration::particleSwarmOptimization(const cv::Mat &g_CB_vec) {
 
-    int Num = 3000;  //number of particles 40000
+    int Num = 4000;  //number of particles 40000
     double c1 = 2; //flying weights according to the local best
     double c2 = 2; //flying weights according to the global best
     int MaxIter = 10;  //max iteration
@@ -290,20 +283,10 @@ void OptCalibration::particleSwarmOptimization(const cv::Mat &g_CB_vec) {
 
         double dev_x = newToolModel.randomNumber(0.001, 0.0);
         double dev_y = newToolModel.randomNumber(0.001, 0.0);
-        double dev_z = newToolModel.randomNumber(0.0002, 0.0);
-        double dev_roll = newToolModel.randomNumber(0.0002, 0);
-        double dev_pitch = newToolModel.randomNumber(0.0002, 0);
-        double dev_yaw = newToolModel.randomNumber(0.0002, 0);
-
-        /**
-         * This is to show testing results without noises
-         */
-         dev_x = 0.0;
-         dev_y = 0.0;
-         dev_z = 0.0;
-         dev_roll = 0.0; //
-         dev_pitch = 0.0; //
-         dev_yaw = 0.0; //
+        double dev_z = newToolModel.randomNumber(0.001, 0.0);
+        double dev_roll = newToolModel.randomNumber(0.002, 0);
+        double dev_pitch = newToolModel.randomNumber(0.002, 0);
+        double dev_yaw = newToolModel.randomNumber(0.002, 0);
 
         ///random velocity
         temp_vel.at<double>(0, 0) = dev_x;
@@ -346,12 +329,12 @@ void OptCalibration::particleSwarmOptimization(const cv::Mat &g_CB_vec) {
     ROS_WARN(" -START ITERATION- ");
     for (int iter = 0; iter < MaxIter; iter++) {
 
-        double dev_x = newToolModel.randomNumber(0.0001, 0.0);
-        double dev_y = newToolModel.randomNumber(0.0001, 0.0);
-        double dev_z = newToolModel.randomNumber(0.00001, 0.0);
-        double dev_roll = newToolModel.randomNumber(0.0001, 0.0); //
-        double dev_pitch = newToolModel.randomNumber(0.0001, 0.0); //
-        double dev_yaw = newToolModel.randomNumber(0.0001, 0.0); //
+        double dev_x = newToolModel.randomNumber(0.0003, 0.0);
+        double dev_y = newToolModel.randomNumber(0.0003, 0.0);
+        double dev_z = newToolModel.randomNumber(0.0002, 0.0);
+        double dev_roll = newToolModel.randomNumber(0.0005, 0.0);
+        double dev_pitch = newToolModel.randomNumber(0.0005, 0.0);
+        double dev_yaw = newToolModel.randomNumber(0.0005, 0.0);
 
         for (int n = 0; n < Num; n++) {
 
@@ -465,7 +448,7 @@ cv::Mat OptCalibration::segmentation(cv::Mat &InputImg) {
     src = InputImg;
     cv::resize(src, src, cv::Size(), 1, 1);
 
-    double lowThresh = 24;
+    double lowThresh = 22;
     cv::cvtColor(src, src_gray, CV_BGR2GRAY);
     cv::blur(src_gray, src_gray, cv::Size(3, 3));
     cv::Canny(src_gray, grad, lowThresh, 4 * lowThresh, 3); //use Canny segmentation
@@ -494,4 +477,36 @@ void OptCalibration::computeRodriguesVec(const Eigen::Affine3d &trans, cv::Mat &
     rot_vec = cv::Mat::zeros(3, 1, CV_64FC1);
     cv::Rodrigues(rot, rot_vec);
     //ROS_INFO_STREAM("rot_vec " << rot_vec);
+};
+
+void OptCalibration::debugOptimization(const cv::Mat &input_g_CB_vec){
+
+    double matchingerror;
+
+    cv::Mat cam_matrices_left;
+    computeSE3(input_g_CB_vec, cam_matrices_left);
+
+    cv::Mat cam_matrices_right = g_cr_cl * cam_matrices_left;
+
+    /** debug: show each rendered pics */
+    for (int i = 0; i < nData; ++i) {
+
+        matchingerror = measureFuncSameCam(toolImage_left_arm_1, toolImage_right_arm_1, tool_poses[i], segmented_left[i], segmented_right[i], cam_matrices_left, cam_matrices_right);
+
+        cv::Mat test_seg_l = left_raw_images[i].clone();
+        cv::Mat test_seg_r = right_raw_images[i].clone();
+
+        newToolModel.renderTool(test_seg_l, tool_poses[i], cam_matrices_left, P_left);
+        newToolModel.renderTool(test_seg_r, tool_poses[i], cam_matrices_right, P_right);
+
+        cv::imshow("seg left ", segmented_left[i] );
+        cv::imshow("seg right ", segmented_right[i] );
+
+        cv::imshow("debug left ", test_seg_l );
+        cv::imshow("debug right ", test_seg_r );
+
+        ROS_INFO_STREAM("matchingerror " << matchingerror);
+        cv::waitKey();
+    }
+
 };

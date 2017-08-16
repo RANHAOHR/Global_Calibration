@@ -364,7 +364,7 @@ void ToolModel::Compute_Silhouette(const std::vector<std::vector<int> > &input_f
                         cv::Point2d prjpt_2 = reproject(ept_2, P);
                         if (prjpt_1.x <= 640 && prjpt_1.x >= -100 && prjpt_2.x < 640 && prjpt_2.x >= -100)
                         {
-                            cv::line(image, prjpt_1, prjpt_2, cv::Scalar(255, 255, 255), 1, 8, 0);  
+                            cv::line(image, prjpt_1, prjpt_2, cv::Scalar(0, 255, 0), 1, 8, 0);
                         }
 
                     }
@@ -584,7 +584,7 @@ void ToolModel::computeEllipsePose(toolModel &inputModel, const double &theta_el
 
     cv::Mat q_ellipse_(4, 1, CV_64FC1);
     q_ellipse_.at<double>(0, 0) = 0;
-    q_ellipse_.at<double>(1, 0) = 0.01;//0.011
+    q_ellipse_.at<double>(1, 0) = 0.009;//0.011
     q_ellipse_.at<double>(2, 0) = 0;
     q_ellipse_.at<double>(3, 0) = 1;
 
@@ -630,6 +630,8 @@ void ToolModel::computeEllipsePose(toolModel &inputModel, const double &theta_el
     double theta_grip_open = theta_grip_2;
     if(theta_grip_open < 0.0){
         theta_grip_open = 0.0;
+    }else{
+        theta_grip_open = theta_grip_open + 0.1;
     }
 
     double grip_2_delta = theta_orien_grip - theta_grip_open;
@@ -761,7 +763,7 @@ float ToolModel::calculateChamferScore(cv::Mat &toolImage, const cv::Mat &segmen
     cv::Mat BinaryImg(toolImFloat.size(), toolImFloat.type());
     BinaryImg = toolImFloat * (1.0/255);
 
-    if(countNonZero(BinaryImg) < 100){
+    if(countNonZero(BinaryImg) < 10){
         output = 1000;
     }else{
         /***segmented image process**/
