@@ -83,20 +83,17 @@ void OptCalibration::optimizationMain(){
     /**
      * some seeds
      */
-    /* -0.14643016064445, -0.05682715421036513, 0.018036308562240, 0.9376132688181528, 2.841738662007055, -0.1992759086311982 */
-    /* -0.1573825011333455, -0.062592196488725, 0.02830238685851418, 0.92371292898318, 2.816467943665938, -0.2305205298700717 */
-
     /* a good one -0.1468711888945467, -0.05000594917652904, 0.01870526756691652, 1.006991441692619, 2.758528500676225, -0.1812563712077466 */
     /* a good one -0.1464792194963849, -0.04897846826936547, 0.01796164720820059, 1.006875736072832, 2.757973804101557, -0.1812948125567952 */
     /* -0.1483084923396818, -0.0505758204867670, 0.01923145282820999, 1.006502013605448, 2.75905915039897, -0.1812421442485061 */
     /* -0.1458969120429149, -0.05649933924315715, 0.02165704280867613, 0.9350228785206781, 2.84484629578232, -0.1992041198977952 */
-    cv::Mat Cam_left_vec = (cv::Mat_<double>(6,1) <<-0.1458969120429149, -0.05649933924315715, 0.02165704280867613, 0.9350228785206781, 2.84484629578232, -0.1992041198977952);
+
+    cv::Mat Cam_left_vec = (cv::Mat_<double>(6,1) <<-0.1457363810408611, -0.05765625519212968, 0.02533470436544881, 0.9322043679314238, 2.835923123217101, -0.1986904596649795);
 
     /**
      * Debug function
      */
 //    debugOptimization(Cam_left_vec);
-
     particleSwarmOptimization(Cam_left_vec);
 
 };
@@ -244,7 +241,7 @@ double OptCalibration::measureFuncSameCam(cv::Mat & toolImage_left, cv::Mat & to
 
 void OptCalibration::particleSwarmOptimization(const cv::Mat &g_CB_vec) {
 
-    int Num = 4000;  //number of particles 40000
+    int Num = 1000;  //number of particles 40000
     double c1 = 2; //flying weights according to the local best
     double c2 = 2; //flying weights according to the global best
     int MaxIter = 10;  //max iteration
@@ -281,12 +278,12 @@ void OptCalibration::particleSwarmOptimization(const cv::Mat &g_CB_vec) {
             ROS_INFO_STREAM(" i = " << i);
         }
 
-        double dev_x = newToolModel.randomNumber(0.001, 0.0);
-        double dev_y = newToolModel.randomNumber(0.001, 0.0);
-        double dev_z = newToolModel.randomNumber(0.001, 0.0);
-        double dev_roll = newToolModel.randomNumber(0.002, 0);
-        double dev_pitch = newToolModel.randomNumber(0.002, 0);
-        double dev_yaw = newToolModel.randomNumber(0.002, 0);
+        double dev_x = newToolModel.randomNumber(0.0005, 0.0);
+        double dev_y = newToolModel.randomNumber(0.0005, 0.0);
+        double dev_z = newToolModel.randomNumber(0.0005, 0.0);
+        double dev_roll = newToolModel.randomNumber(0.001,0);
+        double dev_pitch = newToolModel.randomNumber(0.001, 0);
+        double dev_yaw = newToolModel.randomNumber(0.001, 0);
 
         ///random velocity
         temp_vel.at<double>(0, 0) = dev_x;
@@ -332,9 +329,9 @@ void OptCalibration::particleSwarmOptimization(const cv::Mat &g_CB_vec) {
         double dev_x = newToolModel.randomNumber(0.0003, 0.0);
         double dev_y = newToolModel.randomNumber(0.0003, 0.0);
         double dev_z = newToolModel.randomNumber(0.0002, 0.0);
-        double dev_roll = newToolModel.randomNumber(0.0005, 0.0);
-        double dev_pitch = newToolModel.randomNumber(0.0005, 0.0);
-        double dev_yaw = newToolModel.randomNumber(0.0005, 0.0);
+        double dev_roll = newToolModel.randomNumber(0.0002, 0.0);
+        double dev_pitch = newToolModel.randomNumber(0.0002, 0.0);
+        double dev_yaw = newToolModel.randomNumber(0.0002, 0.0);
 
         for (int n = 0; n < Num; n++) {
 

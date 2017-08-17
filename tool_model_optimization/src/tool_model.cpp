@@ -57,8 +57,8 @@ ToolModel::ToolModel() {
 //    offset_gripper = offset_ellipse+ 0.007;
 
     offset_body = 0.4608; //0.4560
-    offset_ellipse = offset_body;
-    offset_gripper = offset_ellipse;
+    offset_ellipse = offset_body -0.0067;
+    offset_gripper = offset_body -0.006;
 
     /****initialize the vertices fo different part of tools****/
     tool_model_pkg = ros::package::getPath("tool_model_optimization");
@@ -584,7 +584,7 @@ void ToolModel::computeEllipsePose(toolModel &inputModel, const double &theta_el
 
     cv::Mat q_ellipse_(4, 1, CV_64FC1);
     q_ellipse_.at<double>(0, 0) = 0;
-    q_ellipse_.at<double>(1, 0) = 0.009;//0.011
+    q_ellipse_.at<double>(1, 0) = 0.004;//0.011
     q_ellipse_.at<double>(2, 0) = 0;
     q_ellipse_.at<double>(3, 0) = 1;
 
@@ -631,7 +631,7 @@ void ToolModel::computeEllipsePose(toolModel &inputModel, const double &theta_el
     if(theta_grip_open < 0.0){
         theta_grip_open = 0.0;
     }else{
-        theta_grip_open = theta_grip_open + 0.1;
+        theta_grip_open = theta_grip_open + 0.07;
     }
 
     double grip_2_delta = theta_orien_grip - theta_grip_open;
